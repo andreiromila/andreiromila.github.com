@@ -293,7 +293,11 @@
         <p>¿Tienes un reto técnico interesante? Hablemos.</p>
         
         <a href="https://linkedin.com/in/andrei-romila" target="_blank">LinkedIn</a> | 
-        <a href="mailto:contacto&#64;andreiromila&#46;com">contacto<span>&#64;</span>andreiromila<span>&#46;</span>com</a>
+        <a id="email-contact" 
+           class="contact-link" 
+           href="#" 
+           data-replace-text="[email protected]"
+        ></a>
     </footer>
 
     <script>
@@ -334,6 +338,29 @@
                 applyTheme(newTheme);
             });
         })();
+    </script>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // --- Mailto Link Injector ---
+        
+        // 1. Datos fragmentados para máxima ofuscación
+        const username = 'contacto';
+        const hostname = 'andreiromila';
+        const tld = 'com';
+    
+        // 2. Encuentra el enlace en la página
+        const emailLink = document.getElementById('email-contact');
+    
+        if (emailLink) {
+          // 3. Construye dinámicamente la dirección
+          const emailAddress = username + '@' + hostname + '.' + tld;
+    
+          // 4. Inyecta el 'href' y el texto visible
+          emailLink.href = 'mailto:' + emailAddress;
+          emailLink.textContent = emailAddress; // O usa el data-replace-text si lo prefieres
+        }
+      });
     </script>
 </body>
 </html>
