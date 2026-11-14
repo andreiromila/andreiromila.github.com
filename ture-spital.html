@@ -133,21 +133,32 @@
             
             <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3">
                 
+                <!-- Unified Month Stepper Control -->
                 <div class="flex items-center justify-between sm:justify-start gap-2">
-                    <span class="font-bold text-slate-700 text-sm">📅 Luna:</span>
-                    <div class="flex gap-1.5 grow sm:grow-0">
-                        <select id="vacationMonthSelect" onchange="syncDateSelectors('vacation')" class="px-2.5 py-2 border border-slate-300 rounded-lg font-semibold text-sm bg-slate-50 grow">
-                            <option value="0">Ianuarie</option><option value="1">Februarie</option><option value="2">Martie</option>
-                            <option value="3">Aprilie</option><option value="4">Mai</option><option value="5">Iunie</option>
-                            <option value="6">Iulie</option><option value="7">August</option><option value="8">Septembrie</option>
-                            <option value="9">Octombrie</option><option value="10">Noiembrie</option><option value="11">Decembrie</option>
-                        </select>
-                        <select id="vacationYearSelect" onchange="syncDateSelectors('vacation')" class="px-2.5 py-2 border border-slate-300 rounded-lg font-semibold text-sm bg-slate-50">
-                            <option value="2025">2025</option>
-                            <option value="2026" selected>2026</option>
-                            <option value="2027">2027</option>
-                            <option value="2028">2028</option>
-                        </select>
+                    <span class="font-bold text-slate-700 text-sm hidden sm:inline">📅 Luna:</span>
+                    <div class="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-300 shadow-inner w-full sm:w-auto justify-between">
+                        <button type="button" onclick="stepMonth(-1)" class="px-3 py-1.5 bg-white hover:bg-blue-50 active:bg-blue-100 text-slate-700 hover:text-blue-700 rounded-lg font-bold text-xs shadow-sm border border-slate-200/80 transition flex items-center gap-1" title="Luna anterioară">
+                            <span>◀</span> <span class="hidden md:inline">Ant.</span>
+                        </button>
+                        <div class="flex items-center px-1">
+                            <select id="vacationMonthSelect" onchange="syncDateSelectors('vacation')" class="px-2 py-1.5 font-bold text-sm bg-transparent text-slate-800 focus:outline-none cursor-pointer">
+                                <option value="0">Ianuarie</option><option value="1">Februarie</option><option value="2">Martie</option>
+                                <option value="3">Aprilie</option><option value="4">Mai</option><option value="5">Iunie</option>
+                                <option value="6">Iulie</option><option value="7">August</option><option value="8">Septembrie</option>
+                                <option value="9">Octombrie</option><option value="10">Noiembrie</option><option value="11">Decembrie</option>
+                            </select>
+                            <select id="vacationYearSelect" onchange="syncDateSelectors('vacation')" class="px-1.5 py-1.5 font-bold text-sm bg-transparent text-blue-900 focus:outline-none cursor-pointer">
+                                <option value="2025">2025</option>
+                                <option value="2026" selected>2026</option>
+                                <option value="2027">2027</option>
+                                <option value="2028">2028</option>
+                                <option value="2029">2029</option>
+                                <option value="2030">2030</option>
+                            </select>
+                        </div>
+                        <button type="button" onclick="stepMonth(1)" class="px-3 py-1.5 bg-white hover:bg-blue-50 active:bg-blue-100 text-slate-700 hover:text-blue-700 rounded-lg font-bold text-xs shadow-sm border border-slate-200/80 transition flex items-center gap-1" title="Luna următoare">
+                            <span class="hidden md:inline">Urm.</span> <span>▶</span>
+                        </button>
                     </div>
                 </div>
 
@@ -198,23 +209,34 @@
             <!-- Schedule Generator Controls -->
             <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 no-print">
                 
-                <div class="flex flex-wrap items-center justify-between sm:justify-start gap-2">
-                    <div class="flex items-center gap-1.5">
-                        <select id="scheduleMonthSelect" onchange="syncDateSelectors('schedule')" class="px-2.5 py-2 border border-slate-300 rounded-lg font-semibold text-sm bg-slate-50">
-                            <option value="0">Ianuarie</option><option value="1">Februarie</option><option value="2">Martie</option>
-                            <option value="3">Aprilie</option><option value="4">Mai</option><option value="5">Iunie</option>
-                            <option value="6">Iulie</option><option value="7">August</option><option value="8">Septembrie</option>
-                            <option value="9">Octombrie</option><option value="10">Noiembrie</option><option value="11">Decembrie</option>
-                        </select>
-                        <select id="scheduleYearSelect" onchange="syncDateSelectors('schedule')" class="px-2.5 py-2 border border-slate-300 rounded-lg font-semibold text-sm bg-slate-50">
-                            <option value="2025">2025</option>
-                            <option value="2026" selected>2026</option>
-                            <option value="2027">2027</option>
-                            <option value="2028">2028</option>
-                        </select>
+                <div class="flex flex-wrap items-center justify-between sm:justify-start gap-2.5">
+                    <!-- Unified Month Stepper Control -->
+                    <div class="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-300 shadow-inner grow sm:grow-0 justify-between">
+                        <button type="button" onclick="stepMonth(-1)" class="px-3 py-1.5 bg-white hover:bg-blue-50 active:bg-blue-100 text-slate-700 hover:text-blue-700 rounded-lg font-bold text-xs shadow-sm border border-slate-200/80 transition flex items-center gap-1" title="Luna anterioară">
+                            <span>◀</span> <span class="hidden sm:inline">Luna Ant.</span>
+                        </button>
+                        <div class="flex items-center px-1.5">
+                            <select id="scheduleMonthSelect" onchange="syncDateSelectors('schedule')" class="px-2 py-1.5 font-bold text-sm bg-transparent text-slate-800 focus:outline-none cursor-pointer">
+                                <option value="0">Ianuarie</option><option value="1">Februarie</option><option value="2">Martie</option>
+                                <option value="3">Aprilie</option><option value="4">Mai</option><option value="5">Iunie</option>
+                                <option value="6">Iulie</option><option value="7">August</option><option value="8">Septembrie</option>
+                                <option value="9">Octombrie</option><option value="10">Noiembrie</option><option value="11">Decembrie</option>
+                            </select>
+                            <select id="scheduleYearSelect" onchange="syncDateSelectors('schedule')" class="px-1.5 py-1.5 font-bold text-sm bg-transparent text-blue-900 focus:outline-none cursor-pointer">
+                                <option value="2025">2025</option>
+                                <option value="2026" selected>2026</option>
+                                <option value="2027">2027</option>
+                                <option value="2028">2028</option>
+                                <option value="2029">2029</option>
+                                <option value="2030">2030</option>
+                            </select>
+                        </div>
+                        <button type="button" onclick="stepMonth(1)" class="px-3 py-1.5 bg-white hover:bg-blue-50 active:bg-blue-100 text-slate-700 hover:text-blue-700 rounded-lg font-bold text-xs shadow-sm border border-slate-200/80 transition flex items-center gap-1" title="Luna următoare">
+                            <span class="hidden sm:inline">Luna Urm.</span> <span>▶</span>
+                        </button>
                     </div>
 
-                    <div class="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs">
+                    <div class="flex items-center gap-1.5 bg-slate-100 px-3 py-2 rounded-xl border border-slate-200 text-xs">
                         <label class="font-semibold text-slate-700">Min/Tură:</label>
                         <input type="number" id="minPerShiftInput" value="2" min="1" max="8" onchange="saveMinPerShift()" class="w-11 px-1 py-0.5 border border-slate-300 rounded text-center font-bold bg-white">
                     </div>
@@ -420,7 +442,6 @@
         }
 
         // Calculate cumulative historical weekends and shifts from ALL generated months prior to targetYear/targetMonth
-        // If targetYear is null, it sums across ALL generated months in the department.
         function getHistoricalStatsBeforeMonth(dept, targetYear = null, targetMonth = null) {
             const history = {};
             dept.asistentes.forEach(member => {
@@ -437,7 +458,6 @@
                 const y = parseInt(yStr);
                 const m = parseInt(mStr);
 
-                // Only include months strictly before targetYear-targetMonth (or all months if targetYear is null)
                 const isBefore = (targetYear === null) || (y < targetYear) || (y === targetYear && m < targetMonth);
                 if (!isBefore) return;
 
@@ -466,6 +486,7 @@
         // 1. INITIALIZATION
         window.onload = function() {
             const today = new Date();
+            ensureYearOptionExists(today.getFullYear());
             document.getElementById('vacationMonthSelect').value = today.getMonth();
             document.getElementById('vacationYearSelect').value = today.getFullYear();
             document.getElementById('scheduleMonthSelect').value = today.getMonth();
@@ -693,7 +714,7 @@
             }
         }
 
-        // 4. TAB NAVIGATION
+        // 4. TAB NAVIGATION & MONTH STEPPER
         function switchTab(tabNumber) {
             const dept = getActiveDepartment();
             if (tabNumber > 1 && dept.asistentes.length === 0) {
@@ -721,6 +742,46 @@
             if (tabNumber === 1) renderStaffTab();
             if (tabNumber === 2) { updateRangeStaffSelector(); renderVacationCalendar(); }
             if (tabNumber === 3) renderSchedule();
+        }
+
+        function ensureYearOptionExists(year) {
+            ['vacationYearSelect', 'scheduleYearSelect'].forEach(selectId => {
+                const selectEl = document.getElementById(selectId);
+                if (!selectEl) return;
+                const exists = Array.from(selectEl.options).some(opt => parseInt(opt.value) === year);
+                if (!exists) {
+                    const newOpt = document.createElement('option');
+                    newOpt.value = year;
+                    newOpt.textContent = year;
+                    selectEl.appendChild(newOpt);
+                }
+            });
+        }
+
+        // Stepper function for Previous / Next Month buttons (automatically rolls over years Dec <-> Jan)
+        function stepMonth(delta) {
+            let currentMonth = parseInt(document.getElementById('scheduleMonthSelect').value);
+            let currentYear = parseInt(document.getElementById('scheduleYearSelect').value);
+
+            currentMonth += delta;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            } else if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+
+            ensureYearOptionExists(currentYear);
+
+            document.getElementById('vacationMonthSelect').value = currentMonth;
+            document.getElementById('vacationYearSelect').value = currentYear;
+            document.getElementById('scheduleMonthSelect').value = currentMonth;
+            document.getElementById('scheduleYearSelect').value = currentYear;
+
+            selectedMobileDay = 1;
+            if (currentTab === 2) renderVacationCalendar();
+            if (currentTab === 3) renderSchedule();
         }
 
         function syncDateSelectors(source) {
@@ -830,7 +891,6 @@
             const maleCount = dept.asistentes.filter(a => a.genero === 'M').length;
             summary.innerText = `${total} total (${femaleCount} F / ${maleCount} M)`;
 
-            // Calculate total cumulative weekends across all generated months
             const allTimeHistory = getHistoricalStatsBeforeMonth(dept, null, null);
 
             listContainer.innerHTML = '';
@@ -1070,7 +1130,6 @@
                     }
                 }
 
-                // Count how many vacation days this member has in the current month
                 const memberVacationsThisMonth = dept.vacaciones[monthKey]?.[member.id]?.length || 0;
                 const availableDaysRatio = Math.max(0.25, (daysInMonth - memberVacationsThisMonth) / daysInMonth);
 
@@ -1078,7 +1137,7 @@
                 stats[member.id] = {
                     monthlyShifts: 0,
                     monthlyWeekends: 0,
-                    totalWeekends: historicalStats[member.id]?.weekends || 0, // Includes all previous months!
+                    totalWeekends: historicalStats[member.id]?.weekends || 0,
                     availableRatio: availableDaysRatio,
                     workedChristmas: workedPrevChristmas,
                     initialGroup: idx % 4
@@ -1123,11 +1182,9 @@
             // MAIN DAY-BY-DAY LOOP
             for (let d = 1; d <= daysInMonth; d++) {
                 const dateObj = new Date(year, month, d);
-                const dayOfWeek = dateObj.getDay(); // 0 = Sun, 5 = Fri, 6 = Sat
+                const dayOfWeek = dateObj.getDay();
                 const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
                 const isTomorrowWeekend = ((dayOfWeek + 1) % 7 === 0 || (dayOfWeek + 1) % 7 === 6);
-                // Working Z on Friday means working N on Saturday (1 weekend shift).
-                // Working Z on Saturday means working Z on Sat + N on Sun (2 weekend shifts!).
                 const impactsWeekend = isWeekend || isTomorrowWeekend;
 
                 let availableToday = 0;
@@ -1139,7 +1196,6 @@
                     }
                 });
 
-                // Calculate the current minimum and average cumulative weekends among available staff
                 const activeWeekendCounts = dept.asistentes
                     .filter(m => newSchedule[m.id][d] !== 'CO')
                     .map(m => stats[m.id].totalWeekends);
@@ -1189,17 +1245,11 @@
                     const daysOff = countConsecutiveDaysOff(cand.id, d);
 
                     const returningFromVacation = (yesterday === 'CO' && !tomorrowCO);
-                    
-                    // Holiday Bridge (Dec 28-31)
                     const readyForHolidayBridge = (month === 11 && d >= 28 && !stats[cand.id].workedChristmas && daysOff >= 1 && !tomorrowCO);
                     
-                    // Weekend Catch-Up Bridge: If today impacts a weekend (Fri, Sat, Sun) and this person is behind on cumulative weekends,
-                    // allow them to step in after just 1 day off (Z -> N -> L -> Z -> N) to catch up on weekend shifts!
                     const isBehindOnWeekends = (stats[cand.id].totalWeekends <= minTeamWeekends + 1) && (maxTeamWeekends - stats[cand.id].totalWeekends >= 2);
                     const readyForWeekendCatchUp = (impactsWeekend && isBehindOnWeekends && daysOff >= 1 && !tomorrowCO);
 
-                    // Conversely, if today impacts a weekend and this person already has way more weekends than the minimum,
-                    // hold them back for an extra day off (3 days off) if other staff can cover!
                     const isAheadOnWeekends = impactsWeekend && (stats[cand.id].totalWeekends >= minTeamWeekends + 2);
 
                     const readyStandard = (stats[cand.id].workedChristmas && (month === 11 && d >= 27)) || isAheadOnWeekends
@@ -1209,7 +1259,6 @@
                     const blockedFromNewYear = ((month === 11 && (d === 30 || d === 31)) || (month === 0 && d === 1)) && stats[cand.id].workedChristmas;
 
                     if (assignedDay.length < minPerShift) {
-                        // Mandatory minimum hospital coverage
                         newSchedule[cand.id][d] = 'Z';
                         assignedDay.push(cand.id);
                         stats[cand.id].monthlyShifts++;
@@ -1290,7 +1339,6 @@
             const tomorrowCO = hasVacation(dept, monthKey, staffId, d + 1);
             const workedXmas = stats[staffId].workedChristmas;
 
-            // 1. Base Rest & Vacation Return Score
             if (yesterday === 'CO') {
                 score += 800;
             } else if (daysOff >= 3) {
@@ -1298,22 +1346,16 @@
             } else if (daysOff === 2) {
                 score += 520;
             } else if (daysOff === 1) {
-                score += 240; // Enough base score to step in when boosted by weekend fairness!
+                score += 240;
             }
 
-            // 2. ACTIVE WEEKEND EQUALIZATION (Applies on Friday, Saturday, and Sunday)
-            // Note: Working Z on Friday means working N on Saturday (1 weekend shift)
-            // Working Z on Saturday means working Z on Sat + N on Sun (2 weekend shifts!)
             const weekendExcess = stats[staffId].totalWeekends - minTeamWeekends;
             if (isWeekend && isTomorrowWeekend) {
-                // Saturday (Double weekend impact: Sat Z + Sun N)
                 score -= (weekendExcess * 240);
             } else if (isWeekend || isTomorrowWeekend) {
-                // Friday (Sat N) or Sunday (Sun Z)
                 score -= (weekendExcess * 170);
             }
 
-            // 3. CHRISTMAS vs NEW YEAR CYCLE-BREAKING LOGIC
             if (month === 11) {
                 if (d === 28 || d === 29) {
                     if (!workedXmas && daysOff === 1) score += 620;
@@ -1334,12 +1376,10 @@
                 else score += 600;
             }
 
-            // 4. Avoid starting Z today if tomorrow is CO
             if (tomorrowCO) {
                 score -= 500;
             }
 
-            // 5. Proportional Monthly Workload Fairness (normalized by available non-CO days)
             const normalizedShifts = stats[staffId].monthlyShifts / stats[staffId].availableRatio;
             score -= (normalizedShifts * 32);
 
