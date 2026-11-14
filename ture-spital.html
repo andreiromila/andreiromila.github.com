@@ -8,107 +8,102 @@
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
         .no-select { user-select: none; -webkit-user-select: none; }
-        /* Sombra suave para la columna fija en tablas móviles */
         .sticky-col-shadow { box-shadow: 3px 0 5px -2px rgba(0,0,0,0.12); }
         @media print {
             header, nav, .no-print { display: none !important; }
             body { background: white; padding-bottom: 0 !important; }
             .print-full { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
-            #vistaMovilCuadrante { display: none !important; }
-            #contenedorTablaCuadrante { display: block !important; overflow: visible !important; }
+            #mobileScheduleView { display: none !important; }
+            #tableScheduleContainer { display: block !important; overflow: visible !important; }
         }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 pb-20 md:pb-8">
 
-    <!-- BARRA SUPERIOR (HEADER) -->
+    <!-- TOP HEADER BAR -->
     <header class="bg-blue-950 text-white shadow-md sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-3 py-2.5 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2.5">
+        <div class="max-w-[1440px] mx-auto px-3 py-2.5 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2.5">
             
-            <!-- Título + Selector de Sección (Compartiment) -->
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                     <span class="text-xl">🏥</span>
                     <h1 class="text-base sm:text-lg font-bold tracking-tight">Planificare Ture</h1>
                 </div>
 
-                <!-- Selector de Departamento / Sección -->
+                <!-- Department Selector -->
                 <div class="flex items-center gap-1 bg-blue-900 p-1 rounded-lg border border-blue-700 grow sm:grow-0">
-                    <select id="selectSeccion" onchange="cambiarSeccionActiva()" class="bg-transparent text-white font-semibold text-xs sm:text-sm px-2 py-1 focus:outline-none w-full sm:w-auto">
-                        <!-- Se llena con JS -->
+                    <select id="departmentSelect" onchange="handleDepartmentChange()" class="bg-transparent text-white font-semibold text-xs sm:text-sm px-2 py-1 focus:outline-none w-full sm:w-auto">
                     </select>
-                    <button onclick="abrirModalSecciones()" class="bg-blue-800 hover:bg-blue-700 text-xs px-2 py-1 rounded text-blue-100 shrink-0 transition" title="Administrare Secții">
+                    <button onclick="openDepartmentModal()" class="bg-blue-800 hover:bg-blue-700 text-xs px-2 py-1 rounded text-blue-100 shrink-0 transition" title="Administrare Secții">
                         ⚙️ Secții
                     </button>
                 </div>
             </div>
             
-            <!-- Botones de Backup (Compactos para móvil) -->
+            <!-- Backup Controls -->
             <div class="flex items-center justify-end gap-1.5 text-xs overflow-x-auto pb-0.5 md:pb-0">
-                <button onclick="exportarDatos()" class="bg-blue-800 hover:bg-blue-700 px-2.5 py-1.5 rounded flex items-center gap-1 shrink-0 transition">
+                <button onclick="exportBackupFile()" class="bg-blue-800 hover:bg-blue-700 px-2.5 py-1.5 rounded flex items-center gap-1 shrink-0 transition">
                     <span>⬇️</span> Salvare
                 </button>
-                <button onclick="abrirModalBackupTexto()" class="bg-indigo-800 hover:bg-indigo-700 px-2.5 py-1.5 rounded flex items-center gap-1 shrink-0 transition">
+                <button onclick="openTextBackupModal()" class="bg-indigo-800 hover:bg-indigo-700 px-2.5 py-1.5 rounded flex items-center gap-1 shrink-0 transition">
                     <span>📋</span> Cod Date
                 </button>
                 <label class="bg-emerald-800 hover:bg-emerald-700 px-2.5 py-1.5 rounded flex items-center gap-1 cursor-pointer shrink-0 transition">
                     <span>⬆️</span> Încărcare
-                    <input type="file" id="importFile" accept=".json" class="hidden" onchange="importarDatos(event)">
+                    <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="importBackupFile(event)">
                 </label>
-                <button onclick="borrarTodo()" class="bg-red-800 hover:bg-red-700 px-2 py-1.5 rounded shrink-0 transition" title="Șterge tot">
+                <button onclick="resetAllData()" class="bg-red-800 hover:bg-red-700 px-2 py-1.5 rounded shrink-0 transition" title="Șterge tot și resetează">
                     ⚠️
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- CONTENEDOR PRINCIPAL -->
-    <main class="max-w-7xl mx-auto px-2.5 sm:px-4 py-4 print-full">
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-[1440px] mx-auto px-2.5 sm:px-4 py-4 print-full">
 
-        <!-- Pestañas en PC / Tablet (Ocultas en móvil porque van abajo) -->
+        <!-- Desktop Navigation Tabs -->
         <div class="hidden md:flex border-b border-slate-300 mb-5 no-print">
-            <button id="tabBtnPC1" onclick="cambiarPestana(1)" class="px-6 py-3 font-semibold text-blue-900 border-b-2 border-blue-900 bg-white rounded-t-lg transition">
-                👥 1. Echipă Asistenți (<span class="contadorAsistentes">0</span>)
+            <button id="desktopTab1" onclick="switchTab(1)" class="px-6 py-3 font-semibold text-blue-900 border-b-2 border-blue-900 bg-white rounded-t-lg transition">
+                👥 1. Echipă Asistenți (<span class="staffCountBadge">0</span>)
             </button>
-            <button id="tabBtnPC2" onclick="cambiarPestana(2)" class="px-6 py-3 font-medium text-slate-500 hover:text-slate-700 transition">
+            <button id="desktopTab2" onclick="switchTab(2)" class="px-6 py-3 font-medium text-slate-500 hover:text-slate-700 transition">
                 🏖️ 2. Concedii (CO)
             </button>
-            <button id="tabBtnPC3" onclick="cambiarPestana(3)" class="px-6 py-3 font-medium text-slate-500 hover:text-slate-700 transition">
+            <button id="desktopTab3" onclick="switchTab(3)" class="px-6 py-3 font-medium text-slate-500 hover:text-slate-700 transition">
                 📅 3. Grafic Lunar (Ture)
             </button>
         </div>
 
         <!-- ========================================== -->
-        <!-- PESTAÑA 1: ECHIPĂ ASISTENȚI                -->
+        <!-- TAB 1: STAFF MANAGEMENT (ECHIPĂ)           -->
         <!-- ========================================== -->
-        <div id="vistaPestana1" class="space-y-4">
+        <div id="tabView1" class="space-y-4">
             
-            <!-- Banner de Configuración Inicial -->
             <div id="setupBanner" class="hidden bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg shadow-sm">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
                         <h3 class="font-bold text-amber-900 text-base">👋 Secție nouă fără asistenți!</h3>
-                        <p class="text-amber-800 text-xs sm:text-sm">Această secție (<strong id="nombreSeccionBanner"></strong>) nu are asistenți înregistrați. Poți adăuga manual mai jos sau poți încărca o echipă demonstrativă.</p>
+                        <p class="text-amber-800 text-xs sm:text-sm">Această secție (<strong id="bannerDeptName"></strong>) nu are asistenți înregistrați. Poți adăuga manual mai jos sau poți încărca echipa demonstrativă (cu Mihai Dezos inclus).</p>
                     </div>
-                    <button onclick="cargarDatosDePrueba()" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white font-semibold px-4 py-2.5 rounded-lg shadow text-sm shrink-0 transition">
+                    <button onclick="loadDemoStaff()" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white font-semibold px-4 py-2.5 rounded-lg shadow text-sm shrink-0 transition">
                         ✨ Încarcă Asistenți Demo
                     </button>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- Formulario Añadir Asistente -->
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 h-fit">
                     <h2 class="text-base font-bold mb-3 text-slate-700 border-b pb-2">➕ Adaugă Asistent în Secție</h2>
-                    <form id="formAsistente" onsubmit="agregarAsistente(event)" class="space-y-3">
+                    <form id="addStaffForm" onsubmit="handleAddStaff(event)" class="space-y-3">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Nume și Prenume</label>
-                            <input type="text" id="inputNombre" required placeholder="Ex: Elena Popescu" 
+                            <input type="text" id="staffNameInput" required placeholder="Ex: Mihai Dezos" 
                                    class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Gen</label>
-                            <select id="inputGenero" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white">
+                            <select id="staffGenderInput" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white">
                                 <option value="F">Feminin (F)</option>
                                 <option value="M">Masculin (M)</option>
                             </select>
@@ -119,39 +114,35 @@
                     </form>
                 </div>
 
-                <!-- Lista de Asistentes -->
                 <div class="md:col-span-2 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center mb-3 border-b pb-2">
                         <div>
-                            <h2 class="text-base font-bold text-slate-700" id="tituloPlantilla">📋 Echipă</h2>
+                            <h2 class="text-base font-bold text-slate-700" id="rosterTitle">📋 Echipă</h2>
                         </div>
-                        <span id="resumenEquipo" class="text-xs bg-blue-50 text-blue-800 px-2.5 py-1 rounded-full font-semibold"></span>
+                        <span id="rosterSummary" class="text-xs bg-blue-50 text-blue-800 px-2.5 py-1 rounded-full font-semibold"></span>
                     </div>
-                    <div id="listaAsistentes" class="divide-y divide-slate-100">
-                        <!-- Se llena con JS (Diseño adaptable a móvil y PC) -->
-                    </div>
+                    <div id="staffListContainer" class="divide-y divide-slate-100"></div>
                 </div>
             </div>
         </div>
 
         <!-- ========================================== -->
-        <!-- PESTAÑA 2: CONCEDII DE ODIHNĂ (CO)         -->
+        <!-- TAB 2: VACATIONS (CONCEDII DE ODIHNĂ - CO) -->
         <!-- ========================================== -->
-        <div id="vistaPestana2" class="hidden space-y-4">
+        <div id="tabView2" class="hidden space-y-4">
             
-            <!-- Controles de Mes y Rango Rápido -->
             <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3">
                 
                 <div class="flex items-center justify-between sm:justify-start gap-2">
                     <span class="font-bold text-slate-700 text-sm">📅 Luna:</span>
                     <div class="flex gap-1.5 grow sm:grow-0">
-                        <select id="selectMes" onchange="sincronizarSelectoresFecha('vacaciones')" class="px-2.5 py-2 border border-slate-300 rounded-lg font-semibold text-sm bg-slate-50 grow">
+                        <select id="vacationMonthSelect" onchange="syncDateSelectors('vacation')" class="px-2.5 py-2 border border-slate-300 rounded-lg font-semibold text-sm bg-slate-50 grow">
                             <option value="0">Ianuarie</option><option value="1">Februarie</option><option value="2">Martie</option>
                             <option value="3">Aprilie</option><option value="4">Mai</option><option value="5">Iunie</option>
                             <option value="6">Iulie</option><option value="7">August</option><option value="8">Septembrie</option>
                             <option value="9">Octombrie</option><option value="10">Noiembrie</option><option value="11">Decembrie</option>
                         </select>
-                        <select id="selectAnio" onchange="sincronizarSelectoresFecha('vacaciones')" class="px-2.5 py-2 border border-slate-300 rounded-lg font-semibold text-sm bg-slate-50">
+                        <select id="vacationYearSelect" onchange="syncDateSelectors('vacation')" class="px-2.5 py-2 border border-slate-300 rounded-lg font-semibold text-sm bg-slate-50">
                             <option value="2025">2025</option>
                             <option value="2026" selected>2026</option>
                             <option value="2027">2027</option>
@@ -160,63 +151,62 @@
                     </div>
                 </div>
 
-                <!-- Asignador Rápido por Rango (Ideal para móvil) -->
+                <!-- Quick Vacation Range Selector -->
                 <div class="bg-emerald-50/70 p-2.5 rounded-lg border border-emerald-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 text-xs">
                     <span class="font-bold text-emerald-950">⚡ Perioadă CO rapidă:</span>
-                    <select id="rangoAsistente" class="px-2.5 py-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-800"></select>
+                    <select id="rangeStaffSelect" class="px-2.5 py-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-800"></select>
                     <div class="flex items-center gap-1.5">
                         <span>Ziua</span>
-                        <input type="number" id="rangoInicio" min="1" max="31" value="1" class="w-14 px-2 py-1.5 border border-slate-300 rounded-lg text-center font-bold bg-white">
+                        <input type="number" id="rangeStartInput" min="1" max="31" value="1" class="w-14 px-2 py-1.5 border border-slate-300 rounded-lg text-center font-bold bg-white">
                         <span>până la</span>
-                        <input type="number" id="rangoFin" min="1" max="31" value="7" class="w-14 px-2 py-1.5 border border-slate-300 rounded-lg text-center font-bold bg-white">
-                        <button onclick="aplicarRangoVacaciones(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold grow sm:grow-0 transition">
+                        <input type="number" id="rangeEndInput" min="1" max="31" value="7" class="w-14 px-2 py-1.5 border border-slate-300 rounded-lg text-center font-bold bg-white">
+                        <button onclick="applyVacationRange(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold grow sm:grow-0 transition">
                             Aplică CO
                         </button>
-                        <button onclick="aplicarRangoVacaciones(false)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium transition">
+                        <button onclick="applyVacationRange(false)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium transition">
                             Șterge
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Tabla de Vacaciones -->
             <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
                     <p class="text-xs text-slate-600">
                         👆 Apasă pe orice căsuță pentru a bifa/debifa <span class="bg-emerald-500 text-white font-bold px-1.5 py-0.5 rounded">CO</span> (Concediu de Odihnă).
                     </p>
-                    <button onclick="cambiarPestana(3)" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition">
+                    <button onclick="switchTab(3)" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition">
                         Mergi la Grafic Ture ➡️
                     </button>
                 </div>
 
                 <div class="overflow-x-auto border border-slate-200 rounded-lg">
                     <table class="w-full border-collapse text-xs no-select">
-                        <thead id="cabeceraCalendario"></thead>
-                        <tbody id="cuerpoCalendario" class="divide-y divide-slate-200"></tbody>
-                        <tfoot id="pieCalendario" class="bg-slate-50 font-semibold border-t-2 border-slate-300"></tfoot>
+                        <thead id="vacationTableHead"></thead>
+                        <tbody id="vacationTableBody" class="divide-y divide-slate-200"></tbody>
+                        <tfoot id="vacationTableFoot" class="bg-slate-50 font-semibold border-t-2 border-slate-300"></tfoot>
                     </table>
                 </div>
             </div>
         </div>
 
         <!-- ========================================== -->
-        <!-- PESTAÑA 3: GRAFIC LUNAR (CUADRANTE)        -->
+        <!-- TAB 3: MONTHLY SCHEDULE (GRAFIC LUNAR)     -->
         <!-- ========================================== -->
-        <div id="vistaPestana3" class="hidden space-y-4">
+        <div id="tabView3" class="hidden space-y-4">
             
-            <!-- Barra de Controles del Generador -->
+            <!-- Schedule Generator Controls -->
             <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 no-print">
                 
                 <div class="flex flex-wrap items-center justify-between sm:justify-start gap-2">
                     <div class="flex items-center gap-1.5">
-                        <select id="selectMesCuadrante" onchange="sincronizarSelectoresFecha('cuadrante')" class="px-2.5 py-2 border border-slate-300 rounded-lg font-semibold text-sm bg-slate-50">
+                        <select id="scheduleMonthSelect" onchange="syncDateSelectors('schedule')" class="px-2.5 py-2 border border-slate-300 rounded-lg font-semibold text-sm bg-slate-50">
                             <option value="0">Ianuarie</option><option value="1">Februarie</option><option value="2">Martie</option>
                             <option value="3">Aprilie</option><option value="4">Mai</option><option value="5">Iunie</option>
                             <option value="6">Iulie</option><option value="7">August</option><option value="8">Septembrie</option>
                             <option value="9">Octombrie</option><option value="10">Noiembrie</option><option value="11">Decembrie</option>
                         </select>
-                        <select id="selectAnioCuadrante" onchange="sincronizarSelectoresFecha('cuadrante')" class="px-2.5 py-2 border border-slate-300 rounded-lg font-semibold text-sm bg-slate-50">
+                        <select id="scheduleYearSelect" onchange="syncDateSelectors('schedule')" class="px-2.5 py-2 border border-slate-300 rounded-lg font-semibold text-sm bg-slate-50">
                             <option value="2025">2025</option>
                             <option value="2026" selected>2026</option>
                             <option value="2027">2027</option>
@@ -226,16 +216,16 @@
 
                     <div class="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs">
                         <label class="font-semibold text-slate-700">Min/Tură:</label>
-                        <input type="number" id="inputMinimoTurno" value="2" min="1" max="8" onchange="guardarMinimoTurno()" class="w-11 px-1 py-0.5 border border-slate-300 rounded text-center font-bold bg-white">
+                        <input type="number" id="minPerShiftInput" value="2" min="1" max="8" onchange="saveMinPerShift()" class="w-11 px-1 py-0.5 border border-slate-300 rounded text-center font-bold bg-white">
                     </div>
                 </div>
 
-                <!-- Botones de Acción -->
+                <!-- Action Buttons -->
                 <div class="flex flex-wrap gap-2">
-                    <button onclick="generarCuadranteAutomatico()" class="grow sm:grow-0 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold px-4 py-2.5 rounded-lg shadow flex items-center justify-center gap-1.5 text-sm transition">
+                    <button onclick="generateMonthlySchedule()" class="grow sm:grow-0 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold px-4 py-2.5 rounded-lg shadow flex items-center justify-center gap-1.5 text-sm transition">
                         <span>⚙️</span> Generează Turele
                     </button>
-                    <button onclick="exportarCSV()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-semibold px-3 py-2 rounded-lg shadow flex items-center gap-1 text-xs transition">
+                    <button onclick="exportScheduleToCSV()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-semibold px-3 py-2 rounded-lg shadow flex items-center gap-1 text-xs transition">
                         <span>📊</span> Excel (CSV)
                     </button>
                     <button onclick="window.print()" class="hidden sm:flex bg-slate-600 hover:bg-slate-500 text-white font-semibold px-3 py-2 rounded-lg shadow items-center gap-1 text-xs transition">
@@ -244,87 +234,70 @@
                 </div>
             </div>
 
-            <!-- Contenedor del Grafic -->
+            <!-- Schedule Display Card -->
             <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200">
                 
-                <!-- Selector de Modo de Vista (Día por Día vs Tabla Completa) + Leyenda -->
                 <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mb-4 gap-3 no-print">
-                    
-                    <!-- Botones de cambio de vista Móvil / PC -->
                     <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-bold">
-                        <button id="btnVistaDia" onclick="cambiarModoVistaCuadrante('dia')" class="flex-1 sm:flex-initial px-3 py-2 rounded-md transition">
+                        <button id="btnViewDay" onclick="setScheduleViewMode('day')" class="flex-1 sm:flex-initial px-3 py-2 rounded-md transition">
                             📱 Zi cu Zi (Mobil)
                         </button>
-                        <button id="btnVistaTabla" onclick="cambiarModoVistaCuadrante('tabla')" class="flex-1 sm:flex-initial px-3 py-2 rounded-md transition">
+                        <button id="btnViewTable" onclick="setScheduleViewMode('table')" class="flex-1 sm:flex-initial px-3 py-2 rounded-md transition">
                             📅 Tabel Complet
                         </button>
                     </div>
 
-                    <!-- Leyenda -->
                     <div class="flex flex-wrap justify-center gap-2 text-[11px] font-medium">
                         <span class="flex items-center gap-1"><span class="px-1.5 py-0.5 bg-sky-600 text-white font-bold rounded">Z</span> Zi (07-19)</span>
                         <span class="flex items-center gap-1"><span class="px-1.5 py-0.5 bg-indigo-900 text-white font-bold rounded">N</span> Noapte (19-07)</span>
                         <span class="flex items-center gap-1"><span class="px-1.5 py-0.5 bg-slate-100 text-slate-500 border rounded">L</span> Liber</span>
                         <span class="flex items-center gap-1"><span class="px-1.5 py-0.5 bg-emerald-500 text-white font-bold rounded">CO</span> Concediu</span>
+                        <span class="flex items-center gap-1"><span class="px-1.5 py-0.5 bg-rose-600 text-white font-bold rounded">🎄</span> Sărbătoare (Crăciun/Revelion)</span>
                     </div>
                 </div>
 
-                <!-- Aviso si aún no hay cuadrante generado -->
-                <div id="cuadranteVacio" class="hidden text-center py-10 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                <div id="emptyScheduleBanner" class="hidden text-center py-10 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-300">
                     <p class="text-slate-600 font-medium mb-1">Nu există un grafic generat pentru această lună în secția curentă.</p>
                     <p class="text-xs text-slate-400 mb-4">Asigură-te că ai trecut mai întâi concediile (CO) în pasul 2.</p>
-                    <button onclick="generarCuadranteAutomatico()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-lg shadow transition">
+                    <button onclick="generateMonthlySchedule()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-lg shadow transition">
                         ⚙️ Generează Graficul Acum
                     </button>
                 </div>
 
-                <!-- ==================================================== -->
-                <!-- VISTA 1: MODO "ZI CU ZI" (ESPECIAL PARA MÓVILES)     -->
-                <!-- ==================================================== -->
-                <div id="vistaMovilCuadrante" class="hidden space-y-4 no-print">
-                    
-                    <!-- Barra horizontal de días (1..31) deslizable con el dedo -->
-                    <div id="barraDiasMovil" class="flex gap-1.5 overflow-x-auto pb-2 pt-1 px-1">
-                        <!-- Se llena con JS -->
-                    </div>
+                <!-- VIEW 1: MOBILE DAY-BY-DAY VIEW -->
+                <div id="mobileScheduleView" class="hidden space-y-4 no-print">
+                    <div id="mobileDayScrollBar" class="flex gap-1.5 overflow-x-auto pb-2 pt-1 px-1"></div>
 
-                    <!-- Tarjeta del Día Seleccionado -->
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4">
                         <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
-                            <button onclick="cambiarDiaMovil(-1)" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-bold text-xs shadow-sm active:bg-slate-100">
+                            <button onclick="stepMobileDay(-1)" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-bold text-xs shadow-sm active:bg-slate-100">
                                 ◀ Ieri
                             </button>
                             <div class="text-center">
-                                <div id="tituloDiaMovil" class="font-bold text-base text-slate-800"></div>
-                                <div id="subtituloDiaMovil" class="text-xs font-medium text-slate-500"></div>
+                                <div id="mobileDayTitle" class="font-bold text-base text-slate-800"></div>
+                                <div id="mobileDaySubtitle" class="text-xs font-medium text-slate-500"></div>
                             </div>
-                            <button onclick="cambiarDiaMovil(1)" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-bold text-xs shadow-sm active:bg-slate-100">
+                            <button onclick="stepMobileDay(1)" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-bold text-xs shadow-sm active:bg-slate-100">
                                 Mâine ▶
                             </button>
                         </div>
 
-                        <!-- Resumen de Cobertura del Día -->
-                        <div id="resumenCoberturaDiaMovil" class="grid grid-cols-2 gap-2 mb-4"></div>
-
-                        <!-- Lista de Asistentes y su turno en este día (Para tocar y cambiar fácilmente) -->
-                        <div id="listaTurnosDiaMovil" class="space-y-2"></div>
+                        <div id="mobileDayCoverageSummary" class="grid grid-cols-2 gap-2 mb-4"></div>
+                        <div id="mobileDayStaffList" class="space-y-2"></div>
                     </div>
 
-                    <!-- Resumen Mensual de Horas y Findes en Móvil -->
                     <div class="bg-white border border-slate-200 rounded-xl p-3">
                         <h4 class="font-bold text-xs uppercase text-slate-500 mb-2">📊 Total Ore și Weekend-uri în această lună</h4>
-                        <div id="resumenMensualMovil" class="divide-y divide-slate-100 text-xs"></div>
+                        <div id="mobileMonthlyStatsSummary" class="divide-y divide-slate-100 text-xs"></div>
                     </div>
                 </div>
 
-                <!-- ==================================================== -->
-                <!-- VISTA 2: TABLA COMPLETA DE 31 DÍAS (PC / IMPRESIÓN)  -->
-                <!-- ==================================================== -->
-                <div id="contenedorTablaCuadrante" class="hidden overflow-x-auto border border-slate-300 rounded-lg">
+                <!-- VIEW 2: FULL 31-DAY TABLE VIEW -->
+                <div id="tableScheduleContainer" class="hidden overflow-x-auto border border-slate-300 rounded-lg">
                     <table class="w-full border-collapse text-xs no-select">
-                        <thead id="cabeceraCuadrante"></thead>
-                        <tbody id="cuerpoCuadrante" class="divide-y divide-slate-200"></tbody>
-                        <tfoot id="pieCuadrante" class="border-t-2 border-slate-400 font-bold"></tfoot>
+                        <thead id="scheduleTableHead"></thead>
+                        <tbody id="scheduleTableBody" class="divide-y divide-slate-200"></tbody>
+                        <tfoot id="scheduleTableFoot" class="border-t-2 border-slate-400 font-bold"></tfoot>
                     </table>
                 </div>
 
@@ -333,152 +306,159 @@
 
     </main>
 
-    <!-- BARRA DE NAVEGACIÓN INFERIOR FIJA (SOLO MÓVIL) -->
+    <!-- MOBILE FIXED BOTTOM NAVIGATION BAR -->
     <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-300 flex justify-around items-center z-40 shadow-lg no-print">
-        <button id="tabBtnMov1" onclick="cambiarPestana(1)" class="flex-1 py-2.5 flex flex-col items-center gap-0.5 text-blue-800 font-bold border-t-2 border-blue-800">
+        <button id="mobileTab1" onclick="switchTab(1)" class="flex-1 py-2.5 flex flex-col items-center gap-0.5 text-blue-800 font-bold border-t-2 border-blue-800">
             <span class="text-lg">👥</span>
-            <span class="text-[11px]">1. Echipă (<span class="contadorAsistentes">0</span>)</span>
+            <span class="text-[11px]">1. Echipă (<span class="staffCountBadge">0</span>)</span>
         </button>
-        <button id="tabBtnMov2" onclick="cambiarPestana(2)" class="flex-1 py-2.5 flex flex-col items-center gap-0.5 text-slate-500 font-medium">
+        <button id="mobileTab2" onclick="switchTab(2)" class="flex-1 py-2.5 flex flex-col items-center gap-0.5 text-slate-500 font-medium">
             <span class="text-lg">🏖️</span>
             <span class="text-[11px]">2. Concedii</span>
         </button>
-        <button id="tabBtnMov3" onclick="cambiarPestana(3)" class="flex-1 py-2.5 flex flex-col items-center gap-0.5 text-slate-500 font-medium">
+        <button id="mobileTab3" onclick="switchTab(3)" class="flex-1 py-2.5 flex flex-col items-center gap-0.5 text-slate-500 font-medium">
             <span class="text-lg">📅</span>
             <span class="text-[11px]">3. Grafic Ture</span>
         </button>
     </nav>
 
-    <!-- MODAL: GESTIÓN DE SECCIONES / DEPARTAMENTOS -->
-    <div id="modalSecciones" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <!-- MODAL: DEPARTMENT MANAGEMENT -->
+    <div id="departmentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl max-w-md w-full p-5 shadow-xl">
             <div class="flex justify-between items-center mb-4 border-b pb-2">
                 <h3 class="text-base font-bold text-slate-800">🏥 Administrare Secții / Compartimente</h3>
-                <button onclick="cerrarModalSecciones()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+                <button onclick="closeDepartmentModal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
             </div>
 
-            <!-- Añadir Nueva Sección -->
-            <form onsubmit="crearNuevaSeccion(event)" class="flex gap-2 mb-4">
-                <input type="text" id="inputNuevaSeccion" required placeholder="Ex: ATI, Urgențe, Pediatrie..." 
+            <form onsubmit="handleCreateDepartment(event)" class="flex gap-2 mb-4">
+                <input type="text" id="newDepartmentNameInput" required placeholder="Ex: ATI, Urgențe, Pediatrie..." 
                        class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm">
                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-2 rounded-lg text-sm shrink-0">
                     + Adaugă
                 </button>
             </form>
 
-            <!-- Lista de Secciones Existentes -->
-            <div id="listaModalSecciones" class="divide-y divide-slate-100 max-h-60 overflow-y-auto border rounded-lg p-2 bg-slate-50"></div>
+            <div id="departmentModalList" class="divide-y divide-slate-100 max-h-60 overflow-y-auto border rounded-lg p-2 bg-slate-50"></div>
 
             <div class="flex justify-end mt-4">
-                <button onclick="cerrarModalSecciones()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg text-slate-700 text-sm font-semibold">Închide</button>
+                <button onclick="closeDepartmentModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg text-slate-700 text-sm font-semibold">Închide</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: EDITAR ASISTENTE -->
-    <div id="modalEditar" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <!-- MODAL: EDIT STAFF MEMBER -->
+    <div id="editStaffModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl max-w-md w-full p-5 shadow-xl">
             <h3 class="text-base font-bold mb-4">✏️ Editează Asistent</h3>
-            <input type="hidden" id="editId">
+            <input type="hidden" id="editStaffId">
             <div class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Nume și Prenume</label>
-                    <input type="text" id="editNombre" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                    <input type="text" id="editStaffName" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Gen</label>
-                    <select id="editGenero" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
+                    <select id="editStaffGender" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
                         <option value="F">Feminin (F)</option>
                         <option value="M">Masculin (M)</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Ture Weekend Anterioare (Bază istorică)</label>
-                    <input type="number" id="editFindes" min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                    <input type="number" id="editStaffWeekends" min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
                 </div>
             </div>
             <div class="flex justify-end gap-2 mt-5">
-                <button onclick="cerrarModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg text-slate-700 text-sm font-medium">Anulează</button>
-                <button onclick="guardarEdicion()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-medium">Salvează</button>
+                <button onclick="closeEditStaffModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg text-slate-700 text-sm font-medium">Anulează</button>
+                <button onclick="saveStaffEdits()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-medium">Salvează</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: COPIAR / PEGAR JSON -->
-    <div id="modalBackupTexto" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <!-- MODAL: COPY / PASTE JSON BACKUP -->
+    <div id="textBackupModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl max-w-lg w-full p-5 shadow-xl">
             <h3 class="text-base font-bold mb-1">📋 Copiere / Lipire Date (Backup)</h3>
             <p class="text-xs text-slate-500 mb-3">Conține toate secțiile, echipele, concediile și graficele.</p>
-            <textarea id="textareaBackup" rows="7" class="w-full p-2 border border-slate-300 rounded-lg font-mono text-xs bg-slate-50"></textarea>
+            <textarea id="backupTextarea" rows="7" class="w-full p-2 border border-slate-300 rounded-lg font-mono text-xs bg-slate-50"></textarea>
             <div class="flex justify-between items-center mt-4">
-                <button onclick="cargarDesdeTextarea()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white text-xs font-bold">⬆️ Încarcă acest cod</button>
-                <button onclick="document.getElementById('modalBackupTexto').classList.add('hidden')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg text-slate-700 text-xs font-bold">Închide</button>
+                <button onclick="loadFromTextBackup()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white text-xs font-bold">⬆️ Încarcă acest cod</button>
+                <button onclick="document.getElementById('textBackupModal').classList.add('hidden')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg text-slate-700 text-xs font-bold">Închide</button>
             </div>
         </div>
     </div>
 
-    <!-- LÓGICA JAVASCRIPT -->
+    <!-- JAVASCRIPT LOGIC (100% ENGLISH CODEBASE, ROMANIAN UI STRINGS) -->
     <script>
         const STORAGE_KEY_V2 = 'hospital_turnos_data_v2_ro';
-        const STORAGE_KEY_OLD = 'hospital_turnos_data_v1';
-        const DIAS_SEMANA = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm'];
-        const NOMBRES_MESES = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
+        const STORAGE_KEY_V1 = 'hospital_turnos_data_v1';
+        const WEEKDAYS_RO = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm'];
+        const MONTHS_RO = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
 
-        // Estado de la interfaz móvil
-        let pestanaActual = 1;
-        let modoVistaCuadrante = window.innerWidth < 768 ? 'dia' : 'tabla'; // En móvil abre por defecto vista Día a Día
-        let diaSeleccionadoMovil = 1;
+        let currentTab = 1;
+        let scheduleViewMode = window.innerWidth < 768 ? 'day' : 'table';
+        let selectedMobileDay = 1;
 
-        // Estructura Global Multi-Sección
+        // Global Application State (compatible with existing localStorage structure)
         let appData = {
             seccionActivaId: 'sec_recuperare',
             secciones: []
         };
 
-        // Obtener el objeto de la sección actualmente seleccionada
-        function secActual() {
-            let s = appData.secciones.find(sec => sec.id === appData.seccionActivaId);
-            if (!s && appData.secciones.length > 0) {
+        function getActiveDepartment() {
+            let dept = appData.secciones.find(sec => sec.id === appData.seccionActivaId);
+            if (!dept && appData.secciones.length > 0) {
                 appData.seccionActivaId = appData.secciones[0].id;
-                s = appData.secciones[0];
+                dept = appData.secciones[0];
             }
-            return s;
+            return dept;
         }
 
-        // 1. INICIALIZACIÓN
-        window.onload = function() {
-            const hoy = new Date();
-            document.getElementById('selectMes').value = hoy.getMonth();
-            document.getElementById('selectAnio').value = hoy.getFullYear();
-            document.getElementById('selectMesCuadrante').value = hoy.getMonth();
-            document.getElementById('selectAnioCuadrante').value = hoy.getFullYear();
+        // Check if a given date is a Major Holiday (Christmas Dec 24-25 or New Year Dec 31 - Jan 2)
+        function isMajorHoliday(monthIndex, day) {
+            if (monthIndex === 11 && (day === 24 || day === 25 || day === 31)) return true;
+            if (monthIndex === 0 && (day === 1 || day === 2)) return true;
+            return false;
+        }
 
-            cargarDesdeLocalStorage();
-            renderizarSelectorSecciones();
-            renderizarInterfaz();
-            actualizarBotonesModoVista();
+        // 1. INITIALIZATION
+        window.onload = function() {
+            const today = new Date();
+            document.getElementById('vacationMonthSelect').value = today.getMonth();
+            document.getElementById('vacationYearSelect').value = today.getFullYear();
+            document.getElementById('scheduleMonthSelect').value = today.getMonth();
+            document.getElementById('scheduleYearSelect').value = today.getFullYear();
+
+            loadFromLocalStorage();
+            renderDepartmentSelector();
+            renderStaffTab();
+            updateViewModeButtons();
         };
 
-        // 2. ALMACENAMIENTO Y MIGRACIÓN AUTOMÁTICA
-        function crearSeccionesPorDefecto() {
+        // 2. DEFAULT DATA & LOCAL STORAGE PERSISTENCE
+        function getDefaultRecoveryStaff() {
+            return [
+                { id: generateId(), nombre: "Mihai Dezos", genero: "M", findesAcumulados: 0 },
+                { id: generateId(), nombre: "Elena Popescu", genero: "F", findesAcumulados: 0 },
+                { id: generateId(), nombre: "Maria Ionescu", genero: "F", findesAcumulados: 0 },
+                { id: generateId(), nombre: "Andreea Dumitrescu", genero: "F", findesAcumulados: 0 },
+                { id: generateId(), nombre: "Ioana Stan", genero: "F", findesAcumulados: 0 },
+                { id: generateId(), nombre: "Cristina Matei", genero: "F", findesAcumulados: 0 },
+                { id: generateId(), nombre: "Mihaela Radu", genero: "F", findesAcumulados: 0 },
+                { id: generateId(), nombre: "Andrei Popa", genero: "M", findesAcumulados: 0 },
+                { id: generateId(), nombre: "Alexandru Gheorghe", genero: "M", findesAcumulados: 0 },
+                { id: generateId(), nombre: "Ștefan Rusu", genero: "M", findesAcumulados: 0 },
+                { id: generateId(), nombre: "Mihai Marin", genero: "M", findesAcumulados: 0 }
+            ];
+        }
+
+        function createDefaultDepartments() {
             return [
                 {
                     id: 'sec_recuperare',
                     nombre: 'Salon Postoperator (Recuperare)',
                     minPorTurno: 2,
-                    asistentes: [
-                        { id: generarId(), nombre: "Mihai Dezos", genero: "M", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Elena Popescu", genero: "F", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Maria Ionescu", genero: "F", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Andreea Dumitrescu", genero: "F", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Ioana Stan", genero: "F", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Cristina Matei", genero: "F", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Mihaela Radu", genero: "F", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Andrei Popa", genero: "M", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Alexandru Gheorghe", genero: "M", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Ștefan Rusu", genero: "M", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Mihai Marin", genero: "M", findesAcumulados: 0 }
-                    ],
+                    asistentes: getDefaultRecoveryStaff(),
                     vacaciones: {},
                     cuadrantes: {}
                 },
@@ -487,14 +467,14 @@
                     nombre: 'Bloc Operator (Săli Operație)',
                     minPorTurno: 2,
                     asistentes: [
-                        { id: generarId(), nombre: "Gabriela Lazăr", genero: "F", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Daniela Moldovan", genero: "F", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Simona Stoica", genero: "F", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Alina Florea", genero: "F", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Camelia Diaconu", genero: "F", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Bogdan Tudor", genero: "M", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Florin Dinu", genero: "M", findesAcumulados: 0 },
-                        { id: generarId(), nombre: "Lucian Oprea", genero: "M", findesAcumulados: 0 }
+                        { id: generateId(), nombre: "Gabriela Lazăr", genero: "F", findesAcumulados: 0 },
+                        { id: generateId(), nombre: "Daniela Moldovan", genero: "F", findesAcumulados: 0 },
+                        { id: generateId(), nombre: "Simona Stoica", genero: "F", findesAcumulados: 0 },
+                        { id: generateId(), nombre: "Alina Florea", genero: "F", findesAcumulados: 0 },
+                        { id: generateId(), nombre: "Camelia Diaconu", genero: "F", findesAcumulados: 0 },
+                        { id: generateId(), nombre: "Bogdan Tudor", genero: "M", findesAcumulados: 0 },
+                        { id: generateId(), nombre: "Florin Dinu", genero: "M", findesAcumulados: 0 },
+                        { id: generateId(), nombre: "Lucian Oprea", genero: "M", findesAcumulados: 0 }
                     ],
                     vacaciones: {},
                     cuadrantes: {}
@@ -502,449 +482,448 @@
             ];
         }
 
-        function guardarEnLocalStorage() {
+        function saveToLocalStorage() {
             localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(appData));
-            renderizarSelectorSecciones();
-            renderizarInterfaz();
+            renderDepartmentSelector();
+            renderStaffTab();
         }
 
-        function cargarDesdeLocalStorage() {
-            const guardadoV2 = localStorage.getItem(STORAGE_KEY_V2);
-            if (guardadoV2) {
+        function ensureMihaiDezosFirst(department) {
+            if (!department || !Array.isArray(department.asistentes)) return;
+            const existingIndex = department.asistentes.findIndex(
+                a => a.nombre.toLowerCase().includes('mihai dezos')
+            );
+            if (existingIndex > 0) {
+                const [mihai] = department.asistentes.splice(existingIndex, 1);
+                department.asistentes.unshift(mihai);
+            } else if (existingIndex === -1 && department.id === 'sec_recuperare' && department.asistentes.length === 10) {
+                // Automatically prepend Mihai Dezos if the user had the old 10-person demo list
+                department.asistentes.unshift({
+                    id: generateId(),
+                    nombre: "Mihai Dezos",
+                    genero: "M",
+                    findesAcumulados: 0
+                });
+            }
+        }
+
+        function loadFromLocalStorage() {
+            const savedV2 = localStorage.getItem(STORAGE_KEY_V2);
+            if (savedV2) {
                 try {
-                    const parsed = JSON.parse(guardadoV2);
+                    const parsed = JSON.parse(savedV2);
                     if (parsed && Array.isArray(parsed.secciones) && parsed.secciones.length > 0) {
                         appData = parsed;
+                        ensureMihaiDezosFirst(appData.secciones[0]);
                         return;
                     }
                 } catch (e) { console.error(e); }
             }
 
-            // Si no hay V2, mirar si tenía datos en la versión 1 para no perderlos
-            const guardadoOld = localStorage.getItem(STORAGE_KEY_OLD);
-            if (guardadoOld) {
+            const savedV1 = localStorage.getItem(STORAGE_KEY_V1);
+            if (savedV1) {
                 try {
-                    const old = JSON.parse(guardadoOld);
-                    if (old && Array.isArray(old.asistentes) && old.asistentes.length > 0) {
-                        // Convertir turnos 'D' antiguos a 'Z' (Zi)
-                        if (old.cuadrantes) {
-                            Object.keys(old.cuadrantes).forEach(mes => {
-                                Object.keys(old.cuadrantes[mes]).forEach(idAsist => {
-                                    Object.keys(old.cuadrantes[mes][idAsist]).forEach(dia => {
-                                        if (old.cuadrantes[mes][idAsist][dia] === 'D') {
-                                            old.cuadrantes[mes][idAsist][dia] = 'Z';
-                                        }
-                                    });
-                                });
-                            });
-                        }
-                        const porDefecto = crearSeccionesPorDefecto();
-                        porDefecto[0].asistentes = old.asistentes;
-                        porDefecto[0].vacaciones = old.vacaciones || {};
-                        porDefecto[0].cuadrantes = old.cuadrantes || {};
-                        appData.secciones = porDefecto;
-                        guardarEnLocalStorage();
+                    const oldData = JSON.parse(savedV1);
+                    if (oldData && Array.isArray(oldData.asistentes) && oldData.asistentes.length > 0) {
+                        const defaultDepts = createDefaultDepartments();
+                        defaultDepts[0].asistentes = oldData.asistentes;
+                        defaultDepts[0].vacaciones = oldData.vacaciones || {};
+                        defaultDepts[0].cuadrantes = oldData.cuadrantes || {};
+                        ensureMihaiDezosFirst(defaultDepts[0]);
+                        appData.secciones = defaultDepts;
+                        saveToLocalStorage();
                         return;
                     }
                 } catch (e) { console.error(e); }
             }
 
-            // Si es primera vez total, inicializar con las 2 secciones listas
-            appData.secciones = crearSeccionesPorDefecto();
-            guardarEnLocalStorage();
+            appData.secciones = createDefaultDepartments();
+            saveToLocalStorage();
         }
 
-        // 3. GESTIÓN DE SECCIONES (COMPARTIMENTE)
-        function renderizarSelectorSecciones() {
-            const select = document.getElementById('selectSeccion');
+        // 3. DEPARTMENT MANAGEMENT
+        function renderDepartmentSelector() {
+            const select = document.getElementById('departmentSelect');
             select.innerHTML = '';
-            appData.secciones.forEach(sec => {
+            appData.secciones.forEach(dept => {
                 const opt = document.createElement('option');
-                opt.value = sec.id;
-                opt.textContent = `${sec.nombre} (${sec.asistentes.length})`;
+                opt.value = dept.id;
+                opt.textContent = `${dept.nombre} (${dept.asistentes.length})`;
                 opt.className = "text-slate-900 font-medium";
-                if (sec.id === appData.seccionActivaId) opt.selected = true;
+                if (dept.id === appData.seccionActivaId) opt.selected = true;
                 select.appendChild(opt);
             });
 
-            const s = secActual();
-            if (s) {
-                document.getElementById('inputMinimoTurno').value = s.minPorTurno || 2;
+            const activeDept = getActiveDepartment();
+            if (activeDept) {
+                document.getElementById('minPerShiftInput').value = activeDept.minPorTurno || 2;
             }
         }
 
-        function cambiarSeccionActiva() {
-            appData.seccionActivaId = document.getElementById('selectSeccion').value;
-            guardarEnLocalStorage();
-            if (pestanaActual === 1) renderizarInterfaz();
-            if (pestanaActual === 2) { actualizarSelectorRangoAsistentes(); renderizarCalendarioVacaciones(); }
-            if (pestanaActual === 3) renderizarCuadrante();
+        function handleDepartmentChange() {
+            appData.seccionActivaId = document.getElementById('departmentSelect').value;
+            saveToLocalStorage();
+            if (currentTab === 1) renderStaffTab();
+            if (currentTab === 2) { updateRangeStaffSelector(); renderVacationCalendar(); }
+            if (currentTab === 3) renderSchedule();
         }
 
-        function guardarMinimoTurno() {
-            const s = secActual();
-            if (!s) return;
-            s.minPorTurno = parseInt(document.getElementById('inputMinimoTurno').value) || 2;
-            guardarEnLocalStorage();
-            renderizarCuadrante();
+        function saveMinPerShift() {
+            const dept = getActiveDepartment();
+            if (!dept) return;
+            dept.minPorTurno = parseInt(document.getElementById('minPerShiftInput').value) || 2;
+            saveToLocalStorage();
+            renderSchedule();
         }
 
-        function abrirModalSecciones() {
-            renderizarListaModalSecciones();
-            document.getElementById('modalSecciones').classList.remove('hidden');
+        function openDepartmentModal() {
+            renderDepartmentModalList();
+            document.getElementById('departmentModal').classList.remove('hidden');
         }
 
-        function cerrarModalSecciones() {
-            document.getElementById('modalSecciones').classList.add('hidden');
+        function closeDepartmentModal() {
+            document.getElementById('departmentModal').classList.add('hidden');
         }
 
-        function renderizarListaModalSecciones() {
-            const cont = document.getElementById('listaModalSecciones');
-            cont.innerHTML = '';
-            appData.secciones.forEach(sec => {
+        function renderDepartmentModalList() {
+            const container = document.getElementById('departmentModalList');
+            container.innerHTML = '';
+            appData.secciones.forEach(dept => {
                 const div = document.createElement('div');
                 div.className = "flex justify-between items-center py-2 px-2 hover:bg-white rounded";
                 div.innerHTML = `
                     <div>
-                        <div class="font-bold text-sm text-slate-800">${escaparHTML(sec.nombre)}</div>
-                        <div class="text-xs text-slate-500">${sec.asistentes.length} asistenți</div>
+                        <div class="font-bold text-sm text-slate-800">${escapeHTML(dept.nombre)}</div>
+                        <div class="text-xs text-slate-500">${dept.asistentes.length} asistenți</div>
                     </div>
                     <div class="flex gap-1">
-                        <button onclick="renombrarSeccion('${sec.id}')" class="px-2 py-1 text-xs bg-slate-200 hover:bg-amber-100 rounded">✏️</button>
-                        ${appData.secciones.length > 1 ? `<button onclick="eliminarSeccion('${sec.id}')" class="px-2 py-1 text-xs bg-slate-200 hover:bg-red-100 text-red-700 rounded">🗑️</button>` : ''}
+                        <button onclick="renameDepartment('${dept.id}')" class="px-2 py-1 text-xs bg-slate-200 hover:bg-amber-100 rounded">✏️</button>
+                        ${appData.secciones.length > 1 ? `<button onclick="deleteDepartment('${dept.id}')" class="px-2 py-1 text-xs bg-slate-200 hover:bg-red-100 text-red-700 rounded">🗑️</button>` : ''}
                     </div>
                 `;
-                cont.appendChild(div);
+                container.appendChild(div);
             });
         }
 
-        function crearNuevaSeccion(event) {
+        function handleCreateDepartment(event) {
             event.preventDefault();
-            const input = document.getElementById('inputNuevaSeccion');
-            const nombre = input.value.trim();
-            if (!nombre) return;
+            const input = document.getElementById('newDepartmentNameInput');
+            const name = input.value.trim();
+            if (!name) return;
 
-            const nuevaId = 'sec_' + generarId();
+            const newId = 'sec_' + generateId();
             appData.secciones.push({
-                id: nuevaId,
-                nombre: nombre,
+                id: newId,
+                nombre: name,
                 minPorTurno: 2,
                 asistentes: [],
                 vacaciones: {},
                 cuadrantes: {}
             });
-            appData.seccionActivaId = nuevaId;
+            appData.seccionActivaId = newId;
             input.value = '';
-            guardarEnLocalStorage();
-            renderizarListaModalSecciones();
-            cambiarPestana(1);
+            saveToLocalStorage();
+            renderDepartmentModalList();
+            switchTab(1);
         }
 
-        function renombrarSeccion(id) {
-            const sec = appData.secciones.find(s => s.id === id);
-            if (!sec) return;
-            const nuevo = prompt("Nume nou pentru secție:", sec.nombre);
-            if (nuevo && nuevo.trim()) {
-                sec.nombre = nuevo.trim();
-                guardarEnLocalStorage();
-                renderizarListaModalSecciones();
+        function renameDepartment(id) {
+            const dept = appData.secciones.find(s => s.id === id);
+            if (!dept) return;
+            const newName = prompt("Nume nou pentru secție:", dept.nombre);
+            if (newName && newName.trim()) {
+                dept.nombre = newName.trim();
+                saveToLocalStorage();
+                renderDepartmentModalList();
             }
         }
 
-        function eliminarSeccion(id) {
+        function deleteDepartment(id) {
             if (appData.secciones.length <= 1) return alert("Trebuie să existe cel puțin o secție.");
-            const sec = appData.secciones.find(s => s.id === id);
-            if (!sec) return;
-            if (confirm(`Sigur dorești să ștergi secția "${sec.nombre}" și toate datele ei?`)) {
+            const dept = appData.secciones.find(s => s.id === id);
+            if (!dept) return;
+            if (confirm(`Sigur dorești să ștergi secția "${dept.nombre}" și toate datele ei?`)) {
                 appData.secciones = appData.secciones.filter(s => s.id !== id);
                 if (appData.seccionActivaId === id) {
                     appData.seccionActivaId = appData.secciones[0].id;
                 }
-                guardarEnLocalStorage();
-                renderizarListaModalSecciones();
+                saveToLocalStorage();
+                renderDepartmentModalList();
             }
         }
 
-        // 4. NAVEGACIÓN ENTRE PESTAÑAS
-        function cambiarPestana(num) {
-            const s = secActual();
-            if (num > 1 && s.asistentes.length === 0) {
+        // 4. TAB NAVIGATION
+        function switchTab(tabNumber) {
+            const dept = getActiveDepartment();
+            if (tabNumber > 1 && dept.asistentes.length === 0) {
                 alert("Adaugă mai întâi asistenții în Pasul 1 (Echipă).");
                 return;
             }
-            pestanaActual = num;
+            currentTab = tabNumber;
 
-            const vistas = [null, document.getElementById('vistaPestana1'), document.getElementById('vistaPestana2'), document.getElementById('vistaPestana3')];
-            const btnPC = [null, document.getElementById('tabBtnPC1'), document.getElementById('tabBtnPC2'), document.getElementById('tabBtnPC3')];
-            const btnMov = [null, document.getElementById('tabBtnMov1'), document.getElementById('tabBtnMov2'), document.getElementById('tabBtnMov3')];
+            const views = [null, document.getElementById('tabView1'), document.getElementById('tabView2'), document.getElementById('tabView3')];
+            const desktopBtns = [null, document.getElementById('desktopTab1'), document.getElementById('desktopTab2'), document.getElementById('desktopTab3')];
+            const mobileBtns = [null, document.getElementById('mobileTab1'), document.getElementById('mobileTab2'), document.getElementById('mobileTab3')];
 
             for (let i = 1; i <= 3; i++) {
-                if (i === num) {
-                    vistas[i].classList.remove('hidden');
-                    btnPC[i].className = "px-6 py-3 font-semibold text-blue-900 border-b-2 border-blue-900 bg-white rounded-t-lg transition";
-                    btnMov[i].className = "flex-1 py-2.5 flex flex-col items-center gap-0.5 text-blue-800 font-bold border-t-2 border-blue-800 bg-blue-50/40";
+                if (i === tabNumber) {
+                    views[i].classList.remove('hidden');
+                    desktopBtns[i].className = "px-6 py-3 font-semibold text-blue-900 border-b-2 border-blue-900 bg-white rounded-t-lg transition";
+                    mobileBtns[i].className = "flex-1 py-2.5 flex flex-col items-center gap-0.5 text-blue-800 font-bold border-t-2 border-blue-800 bg-blue-50/40";
                 } else {
-                    vistas[i].classList.add('hidden');
-                    btnPC[i].className = "px-6 py-3 font-medium text-slate-500 hover:text-slate-700 transition";
-                    btnMov[i].className = "flex-1 py-2.5 flex flex-col items-center gap-0.5 text-slate-500 font-medium";
+                    views[i].classList.add('hidden');
+                    desktopBtns[i].className = "px-6 py-3 font-medium text-slate-500 hover:text-slate-700 transition";
+                    mobileBtns[i].className = "flex-1 py-2.5 flex flex-col items-center gap-0.5 text-slate-500 font-medium";
                 }
             }
 
-            if (num === 1) renderizarInterfaz();
-            if (num === 2) { actualizarSelectorRangoAsistentes(); renderizarCalendarioVacaciones(); }
-            if (num === 3) renderizarCuadrante();
+            if (tabNumber === 1) renderStaffTab();
+            if (tabNumber === 2) { updateRangeStaffSelector(); renderVacationCalendar(); }
+            if (tabNumber === 3) renderSchedule();
         }
 
-        function sincronizarSelectoresFecha(origen) {
-            if (origen === 'vacaciones') {
-                document.getElementById('selectMesCuadrante').value = document.getElementById('selectMes').value;
-                document.getElementById('selectAnioCuadrante').value = document.getElementById('selectAnio').value;
-                renderizarCalendarioVacaciones();
+        function syncDateSelectors(source) {
+            if (source === 'vacation') {
+                document.getElementById('scheduleMonthSelect').value = document.getElementById('vacationMonthSelect').value;
+                document.getElementById('scheduleYearSelect').value = document.getElementById('vacationYearSelect').value;
+                renderVacationCalendar();
             } else {
-                document.getElementById('selectMes').value = document.getElementById('selectMesCuadrante').value;
-                document.getElementById('selectAnio').value = document.getElementById('selectAnioCuadrante').value;
-                diaSeleccionadoMovil = 1;
-                renderizarCuadrante();
+                document.getElementById('vacationMonthSelect').value = document.getElementById('scheduleMonthSelect').value;
+                document.getElementById('vacationYearSelect').value = document.getElementById('scheduleYearSelect').value;
+                selectedMobileDay = 1;
+                renderSchedule();
             }
         }
 
-        // 5. GESTIÓN DE ASISTENTES DE LA SECCIÓN ACTIVA
-        function cargarDatosDePrueba() {
-            const s = secActual();
-            if (!s) return;
-            s.asistentes = [
-                { id: generarId(), nombre: "Elena Popescu", genero: "F", findesAcumulados: 0 },
-                { id: generarId(), nombre: "Maria Ionescu", genero: "F", findesAcumulados: 0 },
-                { id: generarId(), nombre: "Andreea Dumitrescu", genero: "F", findesAcumulados: 0 },
-                { id: generarId(), nombre: "Ioana Stan", genero: "F", findesAcumulados: 0 },
-                { id: generarId(), nombre: "Cristina Matei", genero: "F", findesAcumulados: 0 },
-                { id: generarId(), nombre: "Mihaela Radu", genero: "F", findesAcumulados: 0 },
-                { id: generarId(), nombre: "Andrei Popa", genero: "M", findesAcumulados: 0 },
-                { id: generarId(), nombre: "Alexandru Gheorghe", genero: "M", findesAcumulados: 0 },
-                { id: generarId(), nombre: "Ștefan Rusu", genero: "M", findesAcumulados: 0 },
-                { id: generarId(), nombre: "Mihai Marin", genero: "M", findesAcumulados: 0 }
-            ];
-            guardarEnLocalStorage();
+        // 5. STAFF MANAGEMENT (TAB 1)
+        function loadDemoStaff() {
+            const dept = getActiveDepartment();
+            if (!dept) return;
+            dept.asistentes = getDefaultRecoveryStaff();
+            saveToLocalStorage();
         }
 
-        function agregarAsistente(event) {
+        function handleAddStaff(event) {
             event.preventDefault();
-            const s = secActual();
-            const inputNombre = document.getElementById('inputNombre');
-            const inputGenero = document.getElementById('inputGenero');
-            const nombre = inputNombre.value.trim();
-            if (!nombre || !s) return;
+            const dept = getActiveDepartment();
+            const nameInput = document.getElementById('staffNameInput');
+            const genderInput = document.getElementById('staffGenderInput');
+            const name = nameInput.value.trim();
+            if (!name || !dept) return;
 
-            s.asistentes.push({
-                id: generarId(),
-                nombre: nombre,
-                genero: inputGenero.value,
+            dept.asistentes.push({
+                id: generateId(),
+                nombre: name,
+                genero: genderInput.value,
                 findesAcumulados: 0
             });
-            inputNombre.value = '';
-            inputNombre.focus();
-            guardarEnLocalStorage();
+            nameInput.value = '';
+            nameInput.focus();
+            saveToLocalStorage();
         }
 
-        function eliminarAsistente(id) {
-            const s = secActual();
-            const asistente = s.asistentes.find(a => a.id === id);
-            if (!asistente) return;
-            if (confirm(`Sigur dorești să elimini pe "${asistente.nombre}" din ${s.nombre}?`)) {
-                s.asistentes = s.asistentes.filter(a => a.id !== id);
-                guardarEnLocalStorage();
+        function deleteStaffMember(id) {
+            const dept = getActiveDepartment();
+            const member = dept.asistentes.find(a => a.id === id);
+            if (!member) return;
+            if (confirm(`Sigur dorești să elimini pe "${member.nombre}" din ${dept.nombre}?`)) {
+                dept.asistentes = dept.asistentes.filter(a => a.id !== id);
+                saveToLocalStorage();
             }
         }
 
-        function abrirModalEditar(id) {
-            const s = secActual();
-            const asistente = s.asistentes.find(a => a.id === id);
-            if (!asistente) return;
-            document.getElementById('editId').value = asistente.id;
-            document.getElementById('editNombre').value = asistente.nombre;
-            document.getElementById('editGenero').value = asistente.genero;
-            document.getElementById('editFindes').value = asistente.findesAcumulados || 0;
-            document.getElementById('modalEditar').classList.remove('hidden');
+        function openEditStaffModal(id) {
+            const dept = getActiveDepartment();
+            const member = dept.asistentes.find(a => a.id === id);
+            if (!member) return;
+            document.getElementById('editStaffId').value = member.id;
+            document.getElementById('editStaffName').value = member.nombre;
+            document.getElementById('editStaffGender').value = member.genero;
+            document.getElementById('editStaffWeekends').value = member.findesAcumulados || 0;
+            document.getElementById('editStaffModal').classList.remove('hidden');
         }
 
-        function cerrarModal() {
-            document.getElementById('modalEditar').classList.add('hidden');
+        function closeEditStaffModal() {
+            document.getElementById('editStaffModal').classList.add('hidden');
         }
 
-        function guardarEdicion() {
-            const s = secActual();
-            const id = document.getElementById('editId').value;
-            const nuevoNombre = document.getElementById('editNombre').value.trim();
-            if (!nuevoNombre) return alert("Numele nu poate fi gol.");
+        function saveStaffEdits() {
+            const dept = getActiveDepartment();
+            const id = document.getElementById('editStaffId').value;
+            const newName = document.getElementById('editStaffName').value.trim();
+            if (!newName) return alert("Numele nu poate fi gol.");
 
-            const indice = s.asistentes.findIndex(a => a.id === id);
-            if (indice !== -1) {
-                s.asistentes[indice].nombre = nuevoNombre;
-                s.asistentes[indice].genero = document.getElementById('editGenero').value;
-                s.asistentes[indice].findesAcumulados = parseInt(document.getElementById('editFindes').value) || 0;
-                guardarEnLocalStorage();
-                cerrarModal();
+            const index = dept.asistentes.findIndex(a => a.id === id);
+            if (index !== -1) {
+                dept.asistentes[index].nombre = newName;
+                dept.asistentes[index].genero = document.getElementById('editStaffGender').value;
+                dept.asistentes[index].findesAcumulados = parseInt(document.getElementById('editStaffWeekends').value) || 0;
+                saveToLocalStorage();
+                closeEditStaffModal();
             }
         }
 
-        function renderizarInterfaz() {
-            const s = secActual();
-            if (!s) return;
+        function renderStaffTab() {
+            const dept = getActiveDepartment();
+            if (!dept) return;
 
-            const lista = document.getElementById('listaAsistentes');
+            const listContainer = document.getElementById('staffListContainer');
             const banner = document.getElementById('setupBanner');
-            const resumen = document.getElementById('resumenEquipo');
-            document.getElementById('tituloPlantilla').innerText = `📋 ${s.nombre}`;
-            document.getElementById('nombreSeccionBanner').innerText = s.nombre;
+            const summary = document.getElementById('rosterSummary');
+            document.getElementById('rosterTitle').innerText = `📋 ${dept.nombre}`;
+            document.getElementById('bannerDeptName').innerText = dept.nombre;
 
-            const total = s.asistentes.length;
-            document.querySelectorAll('.contadorAsistentes').forEach(el => el.innerText = total);
+            const total = dept.asistentes.length;
+            document.querySelectorAll('.staffCountBadge').forEach(el => el.innerText = total);
 
             if (total === 0) {
                 banner.classList.remove('hidden');
-                lista.innerHTML = `<div class="text-center py-8 text-slate-400 italic text-sm">Nu există asistenți în această secție.</div>`;
-                resumen.innerText = "0 asistenți";
+                listContainer.innerHTML = `<div class="text-center py-8 text-slate-400 italic text-sm">Nu există asistenți în această secție.</div>`;
+                summary.innerText = "0 asistenți";
                 return;
             } else {
                 banner.classList.add('hidden');
             }
 
-            const mujeres = s.asistentes.filter(a => a.genero === 'F').length;
-            const hombres = s.asistentes.filter(a => a.genero === 'M').length;
-            resumen.innerText = `${total} total (${mujeres} F / ${hombres} M)`;
+            const femaleCount = dept.asistentes.filter(a => a.genero === 'F').length;
+            const maleCount = dept.asistentes.filter(a => a.genero === 'M').length;
+            summary.innerText = `${total} total (${femaleCount} F / ${maleCount} M)`;
 
-            lista.innerHTML = '';
-            s.asistentes.forEach((asistente, index) => {
-                const iconoGenero = asistente.genero === 'F' ? '👩‍⚕️' : '👨‍⚕️';
+            listContainer.innerHTML = '';
+            dept.asistentes.forEach((member, index) => {
+                const genderIcon = member.genero === 'F' ? '👩‍⚕️' : '👨‍⚕️';
                 const item = document.createElement('div');
                 item.className = "py-2.5 px-2 flex items-center justify-between gap-2 hover:bg-slate-50 transition";
                 item.innerHTML = `
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="font-mono text-xs text-slate-400 w-5">${index + 1}.</span>
-                        <span class="text-base">${iconoGenero}</span>
+                        <span class="text-base">${genderIcon}</span>
                         <div class="truncate">
-                            <div class="font-semibold text-sm text-slate-800 truncate">${escaparHTML(asistente.nombre)}</div>
-                            <div class="text-[11px] text-slate-500">Weekend-uri bază: <strong>${asistente.findesAcumulados || 0}</strong></div>
+                            <div class="font-semibold text-sm text-slate-800 truncate">${escapeHTML(member.nombre)}</div>
+                            <div class="text-[11px] text-slate-500">Weekend-uri bază: <strong>${member.findesAcumulados || 0}</strong></div>
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
-                        <button onclick="abrirModalEditar('${asistente.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-amber-100 text-slate-700 rounded-lg text-xs font-medium transition">
+                        <button onclick="openEditStaffModal('${member.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-amber-100 text-slate-700 rounded-lg text-xs font-medium transition">
                             ✏️ Editează
                         </button>
-                        <button onclick="eliminarAsistente('${asistente.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-red-100 text-red-600 rounded-lg text-xs transition">
+                        <button onclick="deleteStaffMember('${member.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-red-100 text-red-600 rounded-lg text-xs transition">
                             🗑️
                         </button>
                     </div>
                 `;
-                lista.appendChild(item);
+                listContainer.appendChild(item);
             });
         }
 
         // ==========================================
-        // 6. LÓGICA DE VACACIONES (CO) POR SECCIÓN
+        // 6. VACATION LOGIC (TAB 2)
         // ==========================================
-        function obtenerClaveMes() {
-            const mes = document.getElementById('selectMes').value;
-            const anio = document.getElementById('selectAnio').value;
-            return `${anio}-${mes}`;
+        function getSelectedMonthKey() {
+            const month = document.getElementById('vacationMonthSelect').value;
+            const year = document.getElementById('vacationYearSelect').value;
+            return `${year}-${month}`;
         }
 
-        function actualizarSelectorRangoAsistentes() {
-            const s = secActual();
-            const select = document.getElementById('rangoAsistente');
+        function updateRangeStaffSelector() {
+            const dept = getActiveDepartment();
+            const select = document.getElementById('rangeStaffSelect');
             select.innerHTML = '';
-            s.asistentes.forEach(a => {
+            dept.asistentes.forEach(member => {
                 const opt = document.createElement('option');
-                opt.value = a.id;
-                opt.textContent = a.nombre;
+                opt.value = member.id;
+                opt.textContent = member.nombre;
                 select.appendChild(opt);
             });
         }
 
-        function tieneVacaciones(sec, claveMes, idAsistente, dia) {
-            if (!sec.vacaciones[claveMes]) return false;
-            if (!sec.vacaciones[claveMes][idAsistente]) return false;
-            return sec.vacaciones[claveMes][idAsistente].includes(dia);
+        function hasVacation(dept, monthKey, staffId, day) {
+            if (!dept.vacaciones[monthKey]) return false;
+            if (!dept.vacaciones[monthKey][staffId]) return false;
+            return dept.vacaciones[monthKey][staffId].includes(day);
         }
 
-        function toggleVacacion(idAsistente, dia) {
-            const s = secActual();
-            const claveMes = obtenerClaveMes();
-            if (!s.vacaciones[claveMes]) s.vacaciones[claveMes] = {};
-            if (!s.vacaciones[claveMes][idAsistente]) s.vacaciones[claveMes][idAsistente] = [];
+        function toggleVacationDay(staffId, day) {
+            const dept = getActiveDepartment();
+            const monthKey = getSelectedMonthKey();
+            if (!dept.vacaciones[monthKey]) dept.vacaciones[monthKey] = {};
+            if (!dept.vacaciones[monthKey][staffId]) dept.vacaciones[monthKey][staffId] = [];
 
-            const listaDias = s.vacaciones[claveMes][idAsistente];
-            const index = listaDias.indexOf(dia);
+            const dayList = dept.vacaciones[monthKey][staffId];
+            const index = dayList.indexOf(day);
 
             if (index === -1) {
-                listaDias.push(dia);
-                if (s.cuadrantes[claveMes]?.[idAsistente]) s.cuadrantes[claveMes][idAsistente][dia] = 'CO';
+                dayList.push(day);
+                if (dept.cuadrantes[monthKey]?.[staffId]) dept.cuadrantes[monthKey][staffId][day] = 'CO';
             } else {
-                listaDias.splice(index, 1);
-                if (s.cuadrantes[claveMes]?.[idAsistente]?.[dia] === 'CO') s.cuadrantes[claveMes][idAsistente][dia] = 'L';
+                dayList.splice(index, 1);
+                if (dept.cuadrantes[monthKey]?.[staffId]?.[day] === 'CO') dept.cuadrantes[monthKey][staffId][day] = 'L';
             }
 
-            guardarEnLocalStorage();
-            renderizarCalendarioVacaciones();
+            saveToLocalStorage();
+            renderVacationCalendar();
         }
 
-        function aplicarRangoVacaciones(ponerCO) {
-            const s = secActual();
-            const idAsistente = document.getElementById('rangoAsistente').value;
-            const inicio = parseInt(document.getElementById('rangoInicio').value);
-            const fin = parseInt(document.getElementById('rangoFin').value);
+        function applyVacationRange(setCO) {
+            const dept = getActiveDepartment();
+            const staffId = document.getElementById('rangeStaffSelect').value;
+            const startDay = parseInt(document.getElementById('rangeStartInput').value);
+            const endDay = parseInt(document.getElementById('rangeEndInput').value);
 
-            if (!idAsistente || isNaN(inicio) || isNaN(fin) || inicio > fin) {
+            if (!staffId || isNaN(startDay) || isNaN(endDay) || startDay > endDay) {
                 return alert("Verifică zilele de început și sfârșit.");
             }
 
-            const claveMes = obtenerClaveMes();
-            const anio = parseInt(document.getElementById('selectAnio').value);
-            const mes = parseInt(document.getElementById('selectMes').value);
-            const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+            const monthKey = getSelectedMonthKey();
+            const year = parseInt(document.getElementById('vacationYearSelect').value);
+            const month = parseInt(document.getElementById('vacationMonthSelect').value);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-            if (!s.vacaciones[claveMes]) s.vacaciones[claveMes] = {};
-            if (!s.vacaciones[claveMes][idAsistente]) s.vacaciones[claveMes][idAsistente] = [];
+            if (!dept.vacaciones[monthKey]) dept.vacaciones[monthKey] = {};
+            if (!dept.vacaciones[monthKey][staffId]) dept.vacaciones[monthKey][staffId] = [];
 
-            let lista = s.vacaciones[claveMes][idAsistente];
+            let dayList = dept.vacaciones[monthKey][staffId];
 
-            for (let d = Math.max(1, inicio); d <= Math.min(diasEnMes, fin); d++) {
-                const idx = lista.indexOf(d);
-                if (ponerCO && idx === -1) {
-                    lista.push(d);
-                    if (s.cuadrantes[claveMes]?.[idAsistente]) s.cuadrantes[claveMes][idAsistente][d] = 'CO';
-                } else if (!ponerCO && idx !== -1) {
-                    lista.splice(idx, 1);
-                    if (s.cuadrantes[claveMes]?.[idAsistente]?.[d] === 'CO') s.cuadrantes[claveMes][idAsistente][d] = 'L';
+            for (let d = Math.max(1, startDay); d <= Math.min(daysInMonth, endDay); d++) {
+                const idx = dayList.indexOf(d);
+                if (setCO && idx === -1) {
+                    dayList.push(d);
+                    if (dept.cuadrantes[monthKey]?.[staffId]) dept.cuadrantes[monthKey][staffId][d] = 'CO';
+                } else if (!setCO && idx !== -1) {
+                    dayList.splice(idx, 1);
+                    if (dept.cuadrantes[monthKey]?.[staffId]?.[d] === 'CO') dept.cuadrantes[monthKey][staffId][d] = 'L';
                 }
             }
 
-            guardarEnLocalStorage();
-            renderizarCalendarioVacaciones();
+            saveToLocalStorage();
+            renderVacationCalendar();
         }
 
-        function renderizarCalendarioVacaciones() {
-            const s = secActual();
-            const anio = parseInt(document.getElementById('selectAnio').value);
-            const mes = parseInt(document.getElementById('selectMes').value);
-            const claveMes = obtenerClaveMes();
-            const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+        function renderVacationCalendar() {
+            const dept = getActiveDepartment();
+            const year = parseInt(document.getElementById('vacationYearSelect').value);
+            const month = parseInt(document.getElementById('vacationMonthSelect').value);
+            const monthKey = getSelectedMonthKey();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-            const thead = document.getElementById('cabeceraCalendario');
-            const tbody = document.getElementById('cuerpoCalendario');
-            const tfoot = document.getElementById('pieCalendario');
+            const thead = document.getElementById('vacationTableHead');
+            const tbody = document.getElementById('vacationTableBody');
+            const tfoot = document.getElementById('vacationTableFoot');
 
             let htmlHead = `<tr class="bg-slate-100 border-b border-slate-300 text-slate-600">
                 <th class="py-2 px-2.5 text-left sticky left-0 bg-slate-100 z-10 border-r border-slate-300 min-w-[130px] sm:min-w-[160px] sticky-col-shadow">Asistent</th>`;
             
-            for (let d = 1; d <= diasEnMes; d++) {
-                const fecha = new Date(anio, mes, d);
-                const diaSemana = fecha.getDay();
-                const esFinde = (diaSemana === 0 || diaSemana === 6);
-                const bgClase = esFinde ? 'bg-amber-100 text-amber-900 font-bold' : '';
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateObj = new Date(year, month, d);
+                const dayOfWeek = dateObj.getDay();
+                const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                const isHoliday = isMajorHoliday(month, d);
+                const bgClass = isHoliday
+                    ? 'bg-rose-600 text-white font-bold'
+                    : (isWeekend ? 'bg-amber-100 text-amber-900 font-bold' : '');
                 
-                htmlHead += `<th class="p-1 text-center border-r border-slate-200 min-w-[34px] ${bgClase}">
-                    <div class="text-[9px] uppercase opacity-75">${DIAS_SEMANA[diaSemana]}</div>
+                htmlHead += `<th class="p-1 text-center border-r border-slate-200 min-w-[32px] ${bgClass}">
+                    <div class="text-[9px] uppercase opacity-75">${WEEKDAYS_RO[dayOfWeek]}</div>
                     <div class="text-xs">${d}</div>
                 </th>`;
             }
@@ -952,643 +931,751 @@
             thead.innerHTML = htmlHead;
 
             let htmlBody = '';
-            s.asistentes.forEach(asistente => {
-                let totalCOAsistente = 0;
+            dept.asistentes.forEach(member => {
+                let totalCO = 0;
                 htmlBody += `<tr class="hover:bg-slate-50">
                     <td class="py-2 px-2.5 font-semibold text-slate-800 sticky left-0 bg-white z-10 border-r border-slate-300 whitespace-nowrap truncate max-w-[135px] sm:max-w-none sticky-col-shadow">
-                        ${escaparHTML(asistente.nombre)}
+                        ${escapeHTML(member.nombre)}
                     </td>`;
 
-                for (let d = 1; d <= diasEnMes; d++) {
-                    const fecha = new Date(anio, mes, d);
-                    const esFinde = (fecha.getDay() === 0 || fecha.getDay() === 6);
-                    const esCO = tieneVacaciones(s, claveMes, asistente.id, d);
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateObj = new Date(year, month, d);
+                    const isWeekend = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
+                    const isCO = hasVacation(dept, monthKey, member.id, d);
                     
-                    if (esCO) totalCOAsistente++;
+                    if (isCO) totalCO++;
 
-                    let celdaClase = esFinde ? 'bg-amber-50/60 hover:bg-amber-100' : 'hover:bg-slate-100';
-                    let contenido = '';
+                    let cellClass = isWeekend ? 'bg-amber-50/60 hover:bg-amber-100' : 'hover:bg-slate-100';
+                    let content = '';
 
-                    if (esCO) {
-                        celdaClase = 'bg-emerald-500 hover:bg-emerald-600 text-white font-bold';
-                        contenido = 'CO';
+                    if (isCO) {
+                        cellClass = 'bg-emerald-500 hover:bg-emerald-600 text-white font-bold';
+                        content = 'CO';
                     }
 
-                    htmlBody += `<td onclick="toggleVacacion('${asistente.id}', ${d})" 
-                                     class="p-1.5 text-center border-r border-slate-200 cursor-pointer transition ${celdaClase}">
-                                     ${contenido}
+                    htmlBody += `<td onclick="toggleVacationDay('${member.id}', ${d})" 
+                                     class="p-1.5 text-center border-r border-slate-200 cursor-pointer transition ${cellClass}">
+                                     ${content}
                                  </td>`;
                 }
 
                 htmlBody += `<td class="py-2 px-2 text-center font-bold text-emerald-700 bg-slate-50 border-l border-slate-300">
-                    ${totalCOAsistente > 0 ? totalCOAsistente : '-'}
+                    ${totalCO > 0 ? totalCO : '-'}
                 </td></tr>`;
             });
             tbody.innerHTML = htmlBody;
 
-            const totalPlantilla = s.asistentes.length;
+            const totalStaff = dept.asistentes.length;
             let htmlFoot = `<tr>
                 <td class="py-2 px-2.5 sticky left-0 bg-slate-100 z-10 border-r border-slate-300 text-slate-600 sticky-col-shadow">
-                    Disponibili (din ${totalPlantilla})
+                    Disponibili (din ${totalStaff})
                 </td>`;
 
-            for (let d = 1; d <= diasEnMes; d++) {
-                let deVacacionesHoy = 0;
-                s.asistentes.forEach(a => {
-                    if (tieneVacaciones(s, claveMes, a.id, d)) deVacacionesHoy++;
+            for (let d = 1; d <= daysInMonth; d++) {
+                let onVacationToday = 0;
+                dept.asistentes.forEach(a => {
+                    if (hasVacation(dept, monthKey, a.id, d)) onVacationToday++;
                 });
-                const disponibles = totalPlantilla - deVacacionesHoy;
-                const minReq = (s.minPorTurno || 2) * 3;
-                const alertaColor = disponibles < minReq ? 'bg-red-100 text-red-700 font-bold' : 'text-slate-600';
+                const available = totalStaff - onVacationToday;
+                const minReq = (dept.minPorTurno || 2) * 3;
+                const alertClass = available < minReq ? 'bg-red-100 text-red-700 font-bold' : 'text-slate-600';
 
-                htmlFoot += `<td class="p-1 text-center border-r border-slate-200 ${alertaColor}">
-                    ${disponibles}
+                htmlFoot += `<td class="p-1 text-center border-r border-slate-200 ${alertClass}">
+                    ${available}
                 </td>`;
             }
             htmlFoot += `<td class="bg-slate-100 border-l border-slate-300"></td></tr>`;
             tfoot.innerHTML = htmlFoot;
         }
 
-        // ============================================================
-        // 7. ALGORITMO GENERADOR DE TURNOS (Z = Zi, N = Noapte, L, CO)
-        // ============================================================
-        function generarCuadranteAutomatico() {
-            const s = secActual();
-            const anio = parseInt(document.getElementById('selectAnioCuadrante').value);
-            const mes = parseInt(document.getElementById('selectMesCuadrante').value);
-            const claveMes = `${anio}-${mes}`;
-            const diasEnMes = new Date(anio, mes + 1, 0).getDate();
-            const minPorTurno = parseInt(document.getElementById('inputMinimoTurno').value) || 2;
-            s.minPorTurno = minPorTurno;
-            const idealPorTurno = Math.max(minPorTurno, Math.floor(s.asistentes.length / 4));
+        // ===================================================================================
+        // 7. SCHEDULE GENERATOR ALGORITHM (WITH CHRISTMAS / NEW YEAR ANTI-OVERLAP LOGIC)
+        // ===================================================================================
+        function generateMonthlySchedule() {
+            const dept = getActiveDepartment();
+            const year = parseInt(document.getElementById('scheduleYearSelect').value);
+            const month = parseInt(document.getElementById('scheduleMonthSelect').value);
+            const monthKey = `${year}-${month}`;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const minPerShift = parseInt(document.getElementById('minPerShiftInput').value) || 2;
+            dept.minPorTurno = minPerShift;
 
-            // Verificar mes anterior para continuidad
-            const fechaMesAnterior = new Date(anio, mes - 1, 1);
-            const claveMesAnt = `${fechaMesAnterior.getFullYear()}-${fechaMesAnterior.getMonth()}`;
-            const diasMesAnt = new Date(anio, mes, 0).getDate();
-            const cuadranteAnterior = s.cuadrantes[claveMesAnt] || null;
+            // Check previous month for seamless cycle continuity across months
+            const prevMonthDate = new Date(year, month - 1, 1);
+            const prevMonthKey = `${prevMonthDate.getFullYear()}-${prevMonthDate.getMonth()}`;
+            const daysInPrevMonth = new Date(year, month, 0).getDate();
+            const prevSchedule = dept.cuadrantes[prevMonthKey] || null;
 
-            let nuevoCuadrante = {};
+            let newSchedule = {};
             let stats = {};
 
-            s.asistentes.forEach((a, idx) => {
-                nuevoCuadrante[a.id] = {};
-                stats[a.id] = {
-                    turnosMes: 0,
-                    findesTotal: a.findesAcumulados || 0,
-                    grupoInicial: idx % 4
+            dept.asistentes.forEach((member, idx) => {
+                // Check if this staff member worked Christmas (Dec 24 or Dec 25) in the previous month (useful when generating January)
+                let workedPrevChristmas = false;
+                if (month === 0 && prevSchedule && prevSchedule[member.id]) {
+                    const dec24 = prevSchedule[member.id][24];
+                    const dec25 = prevSchedule[member.id][25];
+                    if (dec24 === 'Z' || dec24 === 'N' || dec25 === 'Z' || dec25 === 'N') {
+                        workedPrevChristmas = true;
+                    }
+                }
+
+                newSchedule[member.id] = {};
+                stats[member.id] = {
+                    monthlyShifts: 0,
+                    totalWeekends: member.findesAcumulados || 0,
+                    workedChristmas: workedPrevChristmas,
+                    initialGroup: idx % 4
                 };
             });
 
-            function obtenerEstadoPrevio(idAsistente, d) {
-                if (d >= 1) return nuevoCuadrante[idAsistente][d];
-                if (cuadranteAnterior && cuadranteAnterior[idAsistente]) {
-                    const diaAnt = diasMesAnt + d;
-                    return cuadranteAnterior[idAsistente][diaAnt] || 'L';
+            function getPreviousState(staffId, dayNumber) {
+                if (dayNumber >= 1) return newSchedule[staffId][dayNumber];
+                if (prevSchedule && prevSchedule[staffId]) {
+                    const prevDay = daysInPrevMonth + dayNumber;
+                    let state = prevSchedule[staffId][prevDay] || 'L';
+                    return state === 'D' ? 'Z' : state;
                 }
-                const g = stats[idAsistente].grupoInicial;
-                if (d === 0) {
+                const g = stats[staffId].initialGroup;
+                if (dayNumber === 0) {
                     if (g === 3) return 'Z';
                     if (g === 2) return 'N';
                     return 'L';
                 }
-                if (d === -1) {
+                if (dayNumber === -1) {
                     if (g === 2) return 'Z';
                     if (g === 1) return 'N';
                     return 'L';
                 }
-                if (d === -2) {
+                if (dayNumber === -2) {
                     if (g === 0) return 'N';
                     return 'L';
                 }
                 return 'L';
             }
 
-            for (let d = 1; d <= diasEnMes; d++) {
-                const fecha = new Date(anio, mes, d);
-                const esFinde = (fecha.getDay() === 0 || fecha.getDay() === 6);
+            // Count consecutive non-working days (L or CO) immediately before 'dayNumber'
+            function countConsecutiveDaysOff(staffId, dayNumber) {
+                let count = 0;
+                for (let k = 1; k <= 15; k++) {
+                    const st = getPreviousState(staffId, dayNumber - k);
+                    if (st === 'L' || st === 'CO') count++;
+                    else break;
+                }
+                return count;
+            }
 
-                let asignadosDia = [];
-                let asignadosNoche = [];
+            // MAIN DAY-BY-DAY LOOP
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateObj = new Date(year, month, d);
+                const isWeekend = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
 
-                // 1. Vacaciones (CO)
-                s.asistentes.forEach(a => {
-                    if (tieneVacaciones(s, claveMes, a.id, d)) {
-                        nuevoCuadrante[a.id][d] = 'CO';
+                let availableToday = 0;
+                dept.asistentes.forEach(member => {
+                    if (hasVacation(dept, monthKey, member.id, d)) {
+                        newSchedule[member.id][d] = 'CO';
+                    } else {
+                        availableToday++;
                     }
                 });
 
-                // 2. Turno NOAPTE (N) natural: quien hizo ZI (Z) ayer
-                let candidatosNocheNatural = s.asistentes.filter(a => 
-                    nuevoCuadrante[a.id][d] !== 'CO' && obtenerEstadoPrevio(a.id, d - 1) === 'Z'
+                const maxIdealDayShift = Math.max(minPerShift + 1, Math.ceil(dept.asistentes.length / 4));
+                // During Dec 28-31 or Jan 1, we prefer tighter shift sizes (minPerShift) so we don't force Christmas workers into New Year shifts
+                const isHolidayTransition = (month === 11 && d >= 28) || (month === 0 && d <= 2);
+
+                let assignedDay = [];
+                let assignedNight = [];
+
+                // 1. Natural NIGHT (N) shift: whoever worked DAY (Z) yesterday and is not on CO today
+                let naturalNightCandidates = dept.asistentes.filter(member => 
+                    newSchedule[member.id][d] !== 'CO' && getPreviousState(member.id, d - 1) === 'Z'
                 );
 
-                candidatosNocheNatural.forEach(a => {
-                    nuevoCuadrante[a.id][d] = 'N';
-                    asignadosNoche.push(a.id);
-                    stats[a.id].turnosMes++;
-                    if (esFinde) stats[a.id].findesTotal++;
+                naturalNightCandidates.forEach(member => {
+                    newSchedule[member.id][d] = 'N';
+                    assignedNight.push(member.id);
+                    stats[member.id].monthlyShifts++;
+                    if (isWeekend) stats[member.id].totalWeekends++;
+                    if (month === 11 && (d === 24 || d === 25)) stats[member.id].workedChristmas = true;
                 });
 
-                // 3. Turno ZI (Z)
-                let candidatosDia = s.asistentes.filter(a => {
-                    if (nuevoCuadrante[a.id][d]) return false;
-                    const ayer = obtenerEstadoPrevio(a.id, d - 1);
-                    if (ayer === 'N' || ayer === 'Z') return false;
+                // 2. Candidates for DAY (Z) shift
+                let dayCandidates = dept.asistentes.filter(member => {
+                    if (newSchedule[member.id][d]) return false; // Already has CO or N today
+                    const yesterday = getPreviousState(member.id, d - 1);
+                    if (yesterday === 'N' || yesterday === 'Z') return false; // Cannot work back-to-back after N or Z
                     return true;
                 });
 
-                candidatosDia.sort((a, b) => {
-                    let scoreA = calcularPuntosDia(s, a.id, d, esFinde, obtenerEstadoPrevio, stats, claveMes);
-                    let scoreB = calcularPuntosDia(s, b.id, d, esFinde, obtenerEstadoPrevio, stats, claveMes);
+                // Sort candidates by score (includes Vacation Return + Christmas/New Year Swap Logic)
+                dayCandidates.sort((a, b) => {
+                    let scoreA = calculateDayShiftScore(dept, a.id, month, d, isWeekend, getPreviousState, countConsecutiveDaysOff, stats, monthKey);
+                    let scoreB = calculateDayShiftScore(dept, b.id, month, d, isWeekend, getPreviousState, countConsecutiveDaysOff, stats, monthKey);
                     return scoreB - scoreA;
                 });
 
-                for (let i = 0; i < candidatosDia.length; i++) {
-                    const cand = candidatosDia[i];
-                    const ant1 = obtenerEstadoPrevio(cand.id, d - 1);
-                    const ant2 = obtenerEstadoPrevio(cand.id, d - 2);
-                    const ant3 = obtenerEstadoPrevio(cand.id, d - 3);
-                    const leTocaPorCiclo = (ant1 === 'L' && ant2 === 'L' && ant3 === 'N');
+                for (let i = 0; i < dayCandidates.length; i++) {
+                    const cand = dayCandidates[i];
+                    const yesterday = getPreviousState(cand.id, d - 1);
+                    const tomorrowCO = hasVacation(dept, monthKey, cand.id, d + 1);
+                    const daysOff = countConsecutiveDaysOff(cand.id, d);
 
-                    if (asignadosDia.length < minPorTurno || (leTocaPorCiclo && asignadosDia.length < idealPorTurno + 1)) {
-                        nuevoCuadrante[cand.id][d] = 'Z';
-                        asignadosDia.push(cand.id);
-                        stats[cand.id].turnosMes++;
-                        if (esFinde) stats[cand.id].findesTotal++;
+                    const returningFromVacation = (yesterday === 'CO' && !tomorrowCO);
+                    
+                    // Special Holiday Bridge: On Dec 28-31, someone who did NOT work Christmas is ready after just 1 day off (Z -> N -> L -> Z -> N)
+                    const readyForHolidayBridge = (month === 11 && d >= 28 && !stats[cand.id].workedChristmas && daysOff >= 1 && !tomorrowCO);
+                    
+                    // Conversely, someone who DID work Christmas gets 3 days off (Z -> N -> L -> L -> L) before re-entering as optional
+                    const readyStandard = stats[cand.id].workedChristmas && (month === 11 && d >= 27)
+                        ? (daysOff >= 3 && !tomorrowCO)
+                        : (daysOff >= 2 && !tomorrowCO);
+
+                    // Prevent assigning someone on Dec 30, Dec 31 or Jan 1 as "optional extra" if they already worked Christmas
+                    const blockedFromNewYear = ((month === 11 && (d === 30 || d === 31)) || (month === 0 && d === 1)) && stats[cand.id].workedChristmas;
+
+                    if (assignedDay.length < minPerShift) {
+                        // Mandatory minimum hospital coverage
+                        newSchedule[cand.id][d] = 'Z';
+                        assignedDay.push(cand.id);
+                        stats[cand.id].monthlyShifts++;
+                        if (isWeekend) stats[cand.id].totalWeekends++;
+                        if (month === 11 && (d === 24 || d === 25)) stats[cand.id].workedChristmas = true;
+                    } else if (returningFromVacation && assignedDay.length < maxIdealDayShift + 1 && !blockedFromNewYear) {
+                        // Immediate return after CO
+                        newSchedule[cand.id][d] = 'Z';
+                        assignedDay.push(cand.id);
+                        stats[cand.id].monthlyShifts++;
+                        if (isWeekend) stats[cand.id].totalWeekends++;
+                        if (month === 11 && (d === 24 || d === 25)) stats[cand.id].workedChristmas = true;
+                    } else if ((readyStandard || readyForHolidayBridge) && !blockedFromNewYear) {
+                        const targetCap = isHolidayTransition ? minPerShift : maxIdealDayShift;
+                        if (assignedDay.length < targetCap) {
+                            newSchedule[cand.id][d] = 'Z';
+                            assignedDay.push(cand.id);
+                            stats[cand.id].monthlyShifts++;
+                            if (isWeekend) stats[cand.id].totalWeekends++;
+                            if (month === 11 && (d === 24 || d === 25)) stats[cand.id].workedChristmas = true;
+                        }
                     }
                 }
 
-                // 4. Refuerzo NOAPTE (N) si baja del mínimo por culpa de vacaciones
-                if (asignadosNoche.length < minPorTurno) {
-                    let candidatosRefuerzoNoche = s.asistentes.filter(a => {
-                        if (nuevoCuadrante[a.id][d]) return false;
-                        const ayer = obtenerEstadoPrevio(a.id, d - 1);
-                        if (ayer === 'N') return false;
+                // 3. Emergency NIGHT (N) reinforcement if below minPerShift
+                if (assignedNight.length < minPerShift) {
+                    let nightBackupCandidates = dept.asistentes.filter(member => {
+                        if (newSchedule[member.id][d]) return false;
+                        const yesterday = getPreviousState(member.id, d - 1);
+                        if (yesterday === 'N') return false;
                         return true;
                     });
 
-                    candidatosRefuerzoNoche.sort((a, b) => {
-                        let scoreA = calcularPuntosRefuerzoNoche(a.id, d, esFinde, obtenerEstadoPrevio, stats);
-                        let scoreB = calcularPuntosRefuerzoNoche(b.id, d, esFinde, obtenerEstadoPrevio, stats);
+                    nightBackupCandidates.sort((a, b) => {
+                        let scoreA = calculateNightBackupScore(a.id, month, d, isWeekend, countConsecutiveDaysOff, stats);
+                        let scoreB = calculateNightBackupScore(b.id, month, d, isWeekend, countConsecutiveDaysOff, stats);
                         return scoreB - scoreA;
                     });
 
-                    while (asignadosNoche.length < minPorTurno && candidatosRefuerzoNoche.length > 0) {
-                        const elegido = candidatosRefuerzoNoche.shift();
-                        nuevoCuadrante[elegido.id][d] = 'N';
-                        asignadosNoche.push(elegido.id);
-                        stats[elegido.id].turnosMes++;
-                        if (esFinde) stats[elegido.id].findesTotal++;
+                    while (assignedNight.length < minPerShift && nightBackupCandidates.length > 0) {
+                        const chosen = nightBackupCandidates.shift();
+                        newSchedule[chosen.id][d] = 'N';
+                        assignedNight.push(chosen.id);
+                        stats[chosen.id].monthlyShifts++;
+                        if (isWeekend) stats[chosen.id].totalWeekends++;
+                        if (month === 11 && (d === 24 || d === 25)) stats[chosen.id].workedChristmas = true;
                     }
                 }
 
-                // 5. Resto Liber (L)
-                s.asistentes.forEach(a => {
-                    if (!nuevoCuadrante[a.id][d]) {
-                        nuevoCuadrante[a.id][d] = 'L';
+                // 4. Everyone else gets Free day (L)
+                dept.asistentes.forEach(member => {
+                    if (!newSchedule[member.id][d]) {
+                        newSchedule[member.id][d] = 'L';
                     }
                 });
             }
 
-            s.cuadrantes[claveMes] = nuevoCuadrante;
-            guardarEnLocalStorage();
-            renderizarCuadrante();
+            dept.cuadrantes[monthKey] = newSchedule;
+            saveToLocalStorage();
+            renderSchedule();
         }
 
-        function calcularPuntosDia(sec, id, d, esFinde, obtenerEstadoPrevio, stats, claveMes) {
-            let puntos = 0;
-            const ant1 = obtenerEstadoPrevio(id, d - 1);
-            const ant2 = obtenerEstadoPrevio(id, d - 2);
-            const ant3 = obtenerEstadoPrevio(id, d - 3);
+        // Scoring function with Holiday Shift-Swap (1-day rest vs 3-day rest between Dec 26 and Jan 1)
+        function calculateDayShiftScore(dept, staffId, month, d, isWeekend, getPreviousState, countConsecutiveDaysOff, stats, monthKey) {
+            let score = 0;
+            const yesterday = getPreviousState(staffId, d - 1);
+            const daysOff = countConsecutiveDaysOff(staffId, d);
+            const tomorrowCO = hasVacation(dept, monthKey, staffId, d + 1);
+            const workedXmas = stats[staffId].workedChristmas;
 
-            if (ant1 === 'L' && ant2 === 'L' && ant3 === 'N') puntos += 500;
-            else if (ant1 === 'L' && ant2 === 'L') puntos += 420;
-            else if (ant1 === 'CO') puntos += 380;
-            else if (ant1 === 'L' && ant2 === 'N') puntos += 150;
-
-            if (tieneVacaciones(sec, claveMes, id, d + 1)) puntos -= 60;
-            puntos -= (stats[id].turnosMes * 18);
-            if (esFinde) puntos -= (stats[id].findesTotal * 45);
-
-            return puntos;
-        }
-
-        function calcularPuntosRefuerzoNoche(id, d, esFinde, obtenerEstadoPrevio, stats) {
-            let puntos = 0;
-            const ant1 = obtenerEstadoPrevio(id, d - 1);
-            const ant2 = obtenerEstadoPrevio(id, d - 2);
-
-            if (ant1 === 'L' && ant2 === 'L') puntos += 300;
-            else if (ant1 === 'L') puntos += 150;
-
-            puntos -= (stats[id].turnosMes * 20);
-            if (esFinde) puntos -= (stats[id].findesTotal * 45);
-            return puntos;
-        }
-
-        // Rotar turno manualmente (Z -> N -> L -> CO)
-        function rotarTurnoManual(idAsistente, dia) {
-            const s = secActual();
-            const anio = parseInt(document.getElementById('selectAnioCuadrante').value);
-            const mes = parseInt(document.getElementById('selectMesCuadrante').value);
-            const claveMes = `${anio}-${mes}`;
-
-            if (!s.cuadrantes[claveMes] || !s.cuadrantes[claveMes][idAsistente]) return;
-
-            const orden = ['Z', 'N', 'L', 'CO'];
-            const actual = s.cuadrantes[claveMes][idAsistente][dia] || 'L';
-            const siguiente = orden[(orden.indexOf(actual) + 1) % orden.length];
-
-            s.cuadrantes[claveMes][idAsistente][dia] = siguiente;
-
-            if (!s.vacaciones[claveMes]) s.vacaciones[claveMes] = {};
-            if (!s.vacaciones[claveMes][idAsistente]) s.vacaciones[claveMes][idAsistente] = [];
-            const idxCO = s.vacaciones[claveMes][idAsistente].indexOf(dia);
-
-            if (siguiente === 'CO' && idxCO === -1) {
-                s.vacaciones[claveMes][idAsistente].push(dia);
-            } else if (siguiente !== 'CO' && idxCO !== -1) {
-                s.vacaciones[claveMes][idAsistente].splice(idxCO, 1);
+            // 1. Immediate return from Vacation (CO)
+            if (yesterday === 'CO') {
+                score += 800;
+            } else if (daysOff >= 3) {
+                score += 700 + (daysOff * 30);
+            } else if (daysOff === 2) {
+                score += 520;
+            } else if (daysOff === 1) {
+                score += 150;
             }
 
-            guardarEnLocalStorage();
-            renderizarCuadrante();
+            // 2. CHRISTMAS vs NEW YEAR CYCLE-BREAKING LOGIC (Dec 27 - Dec 31 & Jan 1)
+            if (month === 11) {
+                if (d === 28 || d === 29) {
+                    // Bridge days: compress rest to 1 day (Z-N-L-Z-N) for those who were FREE on Christmas,
+                    // and expand rest to 3 days (Z-N-L-L-L) for those who WORKED Christmas!
+                    if (!workedXmas && daysOff === 1) {
+                        score += 620; // Boost 1-day rest so non-Christmas workers step in and shift the cycle
+                    }
+                    if (workedXmas && daysOff <= 2) {
+                        score -= 450; // Give Christmas workers a 3rd day off to break the 8-day harmonic
+                    }
+                }
+                if (d === 30) {
+                    // Working Z on Dec 30 means working N on Dec 31 (New Year's Eve!)
+                    if (workedXmas) score -= 2000;
+                    else score += 600;
+                }
+                if (d === 31) {
+                    // Working Z on Dec 31 (New Year's Eve Day + Night into Jan 1)
+                    if (workedXmas) score -= 2500;
+                    else score += 750;
+                }
+            }
+
+            if (month === 0 && (d === 1 || d === 2)) {
+                // January 1st & 2nd: Avoid scheduling staff who worked Christmas
+                if (workedXmas) score -= 2000;
+                else score += 600;
+            }
+
+            // 3. Avoid starting Z today if tomorrow is CO (would leave tomorrow's N shift short)
+            if (tomorrowCO) {
+                score -= 500;
+            }
+
+            // 4. Monthly workload & Weekend fairness
+            score -= (stats[staffId].monthlyShifts * 25);
+            if (isWeekend) {
+                score -= (stats[staffId].totalWeekends * 50);
+            }
+
+            return score;
+        }
+
+        function calculateNightBackupScore(staffId, month, d, isWeekend, countConsecutiveDaysOff, stats) {
+            let score = countConsecutiveDaysOff(staffId, d) * 120;
+            if ((month === 11 && d === 31) || (month === 0 && d === 1)) {
+                if (stats[staffId].workedChristmas) score -= 2000;
+                else score += 500;
+            }
+            score -= (stats[staffId].monthlyShifts * 25);
+            if (isWeekend) score -= (stats[staffId].totalWeekends * 50);
+            return score;
+        }
+
+        function rotateShiftManually(staffId, day) {
+            const dept = getActiveDepartment();
+            const year = parseInt(document.getElementById('scheduleYearSelect').value);
+            const month = parseInt(document.getElementById('scheduleMonthSelect').value);
+            const monthKey = `${year}-${month}`;
+
+            if (!dept.cuadrantes[monthKey] || !dept.cuadrantes[monthKey][staffId]) return;
+
+            const cycleOrder = ['Z', 'N', 'L', 'CO'];
+            const current = dept.cuadrantes[monthKey][staffId][day] || 'L';
+            const nextShift = cycleOrder[(cycleOrder.indexOf(current) + 1) % cycleOrder.length];
+
+            dept.cuadrantes[monthKey][staffId][day] = nextShift;
+
+            if (!dept.vacaciones[monthKey]) dept.vacaciones[monthKey] = {};
+            if (!dept.vacaciones[monthKey][staffId]) dept.vacaciones[monthKey][staffId] = [];
+            const coIdx = dept.vacaciones[monthKey][staffId].indexOf(day);
+
+            if (nextShift === 'CO' && coIdx === -1) {
+                dept.vacaciones[monthKey][staffId].push(day);
+            } else if (nextShift !== 'CO' && coIdx !== -1) {
+                dept.vacaciones[monthKey][staffId].splice(coIdx, 1);
+            }
+
+            saveToLocalStorage();
+            renderSchedule();
         }
 
         // ============================================================
-        // 8. RENDERIZADO DEL CUADRANTE (MODO MÓVIL + MODO TABLA PC)
+        // 8. SCHEDULE RENDERING (MOBILE DAY VIEW + FULL TABLE VIEW)
         // ============================================================
-        function cambiarModoVistaCuadrante(modo) {
-            modoVistaCuadrante = modo;
-            actualizarBotonesModoVista();
-            renderizarCuadrante();
+        function setScheduleViewMode(mode) {
+            scheduleViewMode = mode;
+            updateViewModeButtons();
+            renderSchedule();
         }
 
-        function actualizarBotonesModoVista() {
-            const bDia = document.getElementById('btnVistaDia');
-            const bTabla = document.getElementById('btnVistaTabla');
-            if (modoVistaCuadrante === 'dia') {
-                bDia.className = "flex-1 sm:flex-initial px-3 py-1.5 rounded-md bg-blue-600 text-white shadow transition";
-                bTabla.className = "flex-1 sm:flex-initial px-3 py-1.5 rounded-md text-slate-600 hover:bg-slate-200 transition";
+        function updateViewModeButtons() {
+            const btnDay = document.getElementById('btnViewDay');
+            const btnTable = document.getElementById('btnViewTable');
+            if (scheduleViewMode === 'day') {
+                btnDay.className = "flex-1 sm:flex-initial px-3 py-1.5 rounded-md bg-blue-600 text-white shadow transition";
+                btnTable.className = "flex-1 sm:flex-initial px-3 py-1.5 rounded-md text-slate-600 hover:bg-slate-200 transition";
             } else {
-                bTabla.className = "flex-1 sm:flex-initial px-3 py-1.5 rounded-md bg-blue-600 text-white shadow transition";
-                bDia.className = "flex-1 sm:flex-initial px-3 py-1.5 rounded-md text-slate-600 hover:bg-slate-200 transition";
+                btnTable.className = "flex-1 sm:flex-initial px-3 py-1.5 rounded-md bg-blue-600 text-white shadow transition";
+                btnDay.className = "flex-1 sm:flex-initial px-3 py-1.5 rounded-md text-slate-600 hover:bg-slate-200 transition";
             }
         }
 
-        function cambiarDiaMovil(delta) {
-            const anio = parseInt(document.getElementById('selectAnioCuadrante').value);
-            const mes = parseInt(document.getElementById('selectMesCuadrante').value);
-            const diasEnMes = new Date(anio, mes + 1, 0).getDate();
-            diaSeleccionadoMovil += delta;
-            if (diaSeleccionadoMovil < 1) diaSeleccionadoMovil = diasEnMes;
-            if (diaSeleccionadoMovil > diasEnMes) diaSeleccionadoMovil = 1;
-            renderizarCuadrante();
+        function stepMobileDay(delta) {
+            const year = parseInt(document.getElementById('scheduleYearSelect').value);
+            const month = parseInt(document.getElementById('scheduleMonthSelect').value);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            selectedMobileDay += delta;
+            if (selectedMobileDay < 1) selectedMobileDay = daysInMonth;
+            if (selectedMobileDay > daysInMonth) selectedMobileDay = 1;
+            renderSchedule();
         }
 
-        function seleccionarDiaMovilDirecto(d) {
-            diaSeleccionadoMovil = d;
-            renderizarCuadrante();
+        function selectMobileDay(dayNumber) {
+            selectedMobileDay = dayNumber;
+            renderSchedule();
         }
 
-        function renderizarCuadrante() {
-            const s = secActual();
-            const anio = parseInt(document.getElementById('selectAnioCuadrante').value);
-            const mes = parseInt(document.getElementById('selectMesCuadrante').value);
-            const claveMes = `${anio}-${mes}`;
-            const diasEnMes = new Date(anio, mes + 1, 0).getDate();
-            const minPorTurno = s.minPorTurno || 2;
+        function renderSchedule() {
+            const dept = getActiveDepartment();
+            const year = parseInt(document.getElementById('scheduleYearSelect').value);
+            const month = parseInt(document.getElementById('scheduleMonthSelect').value);
+            const monthKey = `${year}-${month}`;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const minPerShift = dept.minPorTurno || 2;
 
-            if (diaSeleccionadoMovil > diasEnMes) diaSeleccionadoMovil = 1;
+            if (selectedMobileDay > daysInMonth) selectedMobileDay = 1;
 
-            const divVacio = document.getElementById('cuadranteVacio');
-            const divMovil = document.getElementById('vistaMovilCuadrante');
-            const divTabla = document.getElementById('contenedorTablaCuadrante');
+            const emptyBanner = document.getElementById('emptyScheduleBanner');
+            const mobileView = document.getElementById('mobileScheduleView');
+            const tableContainer = document.getElementById('tableScheduleContainer');
 
-            if (!s.cuadrantes[claveMes]) {
-                divVacio.classList.remove('hidden');
-                divMovil.classList.add('hidden');
-                divTabla.classList.add('hidden');
+            if (!dept.cuadrantes[monthKey]) {
+                emptyBanner.classList.remove('hidden');
+                mobileView.classList.add('hidden');
+                tableContainer.classList.add('hidden');
                 return;
             }
 
-            divVacio.classList.add('hidden');
-            const cuadranteMes = s.cuadrantes[claveMes];
+            emptyBanner.classList.add('hidden');
+            const monthSchedule = dept.cuadrantes[monthKey];
 
-            if (modoVistaCuadrante === 'dia') {
-                divMovil.classList.remove('hidden');
-                divTabla.classList.add('hidden');
-                renderizarVistaDiaMovil(s, cuadranteMes, anio, mes, diasEnMes, minPorTurno);
+            if (scheduleViewMode === 'day') {
+                mobileView.classList.remove('hidden');
+                tableContainer.classList.add('hidden');
+                renderMobileDaySchedule(dept, monthSchedule, year, month, daysInMonth, minPerShift);
             } else {
-                divMovil.classList.add('hidden');
-                divTabla.classList.remove('hidden');
+                mobileView.classList.add('hidden');
+                tableContainer.classList.remove('hidden');
             }
 
-            // Siempre rellenar también la tabla para que esté lista si pulsa Imprimir
-            renderizarVistaTablaCompleta(s, cuadranteMes, anio, mes, diasEnMes, minPorTurno);
+            renderFullScheduleTable(dept, monthSchedule, year, month, daysInMonth, minPerShift);
         }
 
-        function renderizarVistaDiaMovil(s, cuadranteMes, anio, mes, diasEnMes, minPorTurno) {
-            // 1. Barra de botones de días 1..31
-            const barra = document.getElementById('barraDiasMovil');
-            let htmlBarra = '';
-            for (let d = 1; d <= diasEnMes; d++) {
-                const fecha = new Date(anio, mes, d);
-                const diaSem = fecha.getDay();
-                const esFinde = (diaSem === 0 || diaSem === 6);
-                const activo = (d === diaSeleccionadoMovil);
+        function renderMobileDaySchedule(dept, monthSchedule, year, month, daysInMonth, minPerShift) {
+            const scrollBar = document.getElementById('mobileDayScrollBar');
+            let htmlBar = '';
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateObj = new Date(year, month, d);
+                const dayOfWeek = dateObj.getDay();
+                const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                const isHoliday = isMajorHoliday(month, d);
+                const isActive = (d === selectedMobileDay);
 
-                // Comprobar si ese día tiene alerta de falta de personal
-                let cZ = 0, cN = 0;
-                s.asistentes.forEach(a => {
-                    const est = cuadranteMes[a.id]?.[d];
-                    if (est === 'Z') cZ++;
-                    if (est === 'N') cN++;
+                let countZ = 0, countN = 0;
+                dept.asistentes.forEach(a => {
+                    const st = monthSchedule[a.id]?.[d];
+                    if (st === 'Z' || st === 'D') countZ++;
+                    if (st === 'N') countN++;
                 });
-                const tieneAlerta = (cZ < minPorTurno || cN < minPorTurno);
+                const hasAlert = (countZ < minPerShift || countN < minPerShift);
 
-                let claseBtn = activo 
+                let btnClass = isActive 
                     ? 'bg-blue-600 text-white font-bold ring-2 ring-blue-300' 
-                    : (esFinde ? 'bg-amber-100 text-amber-900' : 'bg-white text-slate-700 border border-slate-200');
+                    : (isHoliday ? 'bg-rose-600 text-white font-bold' : (isWeekend ? 'bg-amber-100 text-amber-900' : 'bg-white text-slate-700 border border-slate-200'));
                 
-                if (tieneAlerta && !activo) claseBtn = 'bg-red-100 text-red-700 border border-red-400 font-bold';
+                if (hasAlert && !isActive) btnClass = 'bg-red-100 text-red-700 border border-red-400 font-bold';
 
-                htmlBarra += `<button onclick="seleccionarDiaMovilDirecto(${d})" class="shrink-0 w-11 py-1.5 rounded-lg flex flex-col items-center justify-center text-xs transition ${claseBtn}">
-                    <span class="text-[9px] uppercase opacity-75">${DIAS_SEMANA[diaSem]}</span>
+                htmlBar += `<button onclick="selectMobileDay(${d})" class="shrink-0 w-11 py-1.5 rounded-lg flex flex-col items-center justify-center text-xs transition ${btnClass}">
+                    <span class="text-[9px] uppercase opacity-75">${WEEKDAYS_RO[dayOfWeek]}</span>
                     <span class="text-sm font-bold">${d}</span>
                 </button>`;
             }
-            barra.innerHTML = htmlBarra;
+            scrollBar.innerHTML = htmlBar;
 
-            // 2. Cabecera del día actual
-            const fechaSel = new Date(anio, mes, diaSeleccionadoMovil);
-            const esFindeSel = (fechaSel.getDay() === 0 || fechaSel.getDay() === 6);
-            document.getElementById('tituloDiaMovil').innerText = `${DIAS_SEMANA[fechaSel.getDay()]}, ${diaSeleccionadoMovil} ${NOMBRES_MESES[mes]} ${anio}`;
-            document.getElementById('subtituloDiaMovil').innerText = esFindeSel ? '⭐ Zi de Weekend (Spor)' : s.nombre;
+            const selDate = new Date(year, month, selectedMobileDay);
+            const isSelWeekend = (selDate.getDay() === 0 || selDate.getDay() === 6);
+            const isSelHoliday = isMajorHoliday(month, selectedMobileDay);
+            document.getElementById('mobileDayTitle').innerText = `${WEEKDAYS_RO[selDate.getDay()]}, ${selectedMobileDay} ${MONTHS_RO[month]} ${year}`;
+            document.getElementById('mobileDaySubtitle').innerText = isSelHoliday
+                ? '🎄 Sărbătoare Legală (Crăciun / Revelion)'
+                : (isSelWeekend ? '⭐ Zi de Weekend (Spor)' : dept.nombre);
 
-            // 3. Contadores de cobertura del día
-            let contZ = 0, contN = 0;
-            s.asistentes.forEach(a => {
-                const est = cuadranteMes[a.id]?.[diaSeleccionadoMovil] || 'L';
-                if (est === 'Z') contZ++;
-                if (est === 'N') contN++;
+            let countZ = 0, countN = 0;
+            dept.asistentes.forEach(a => {
+                const st = monthSchedule[a.id]?.[selectedMobileDay] || 'L';
+                if (st === 'Z' || st === 'D') countZ++;
+                if (st === 'N') countN++;
             });
 
-            const claseZ = contZ < minPorTurno ? 'bg-red-600 text-white' : 'bg-sky-600 text-white';
-            const claseN = contN < minPorTurno ? 'bg-red-600 text-white' : 'bg-indigo-900 text-white';
+            const classZ = countZ < minPerShift ? 'bg-red-600 text-white' : 'bg-sky-600 text-white';
+            const classN = countN < minPerShift ? 'bg-red-600 text-white' : 'bg-indigo-900 text-white';
 
-            document.getElementById('resumenCoberturaDiaMovil').innerHTML = `
-                <div class="${claseZ} p-2.5 rounded-lg flex justify-between items-center shadow-sm">
+            document.getElementById('mobileDayCoverageSummary').innerHTML = `
+                <div class="${classZ} p-2.5 rounded-lg flex justify-between items-center shadow-sm">
                     <span class="text-xs font-semibold">☀️ Tura ZI (07-19)</span>
-                    <span class="text-base font-bold">${contZ} asist.</span>
+                    <span class="text-base font-bold">${countZ} asist.</span>
                 </div>
-                <div class="${claseN} p-2.5 rounded-lg flex justify-between items-center shadow-sm">
+                <div class="${classN} p-2.5 rounded-lg flex justify-between items-center shadow-sm">
                     <span class="text-xs font-semibold">🌙 Tura NOAPTE</span>
-                    <span class="text-base font-bold">${contN} asist.</span>
+                    <span class="text-base font-bold">${countN} asist.</span>
                 </div>
             `;
 
-            // 4. Lista de asistentes ordenada por turno (Primero Z, luego N, luego CO y L)
-            const ordenPrioridad = { 'Z': 1, 'N': 2, 'CO': 3, 'L': 4 };
-            const asistentesOrdenados = [...s.asistentes].sort((a, b) => {
-                const estA = cuadranteMes[a.id]?.[diaSeleccionadoMovil] || 'L';
-                const estB = cuadranteMes[b.id]?.[diaSeleccionadoMovil] || 'L';
-                return ordenPrioridad[estA] - ordenPrioridad[estB];
+            const priorityOrder = { 'Z': 1, 'D': 1, 'N': 2, 'CO': 3, 'L': 4 };
+            const sortedStaff = [...dept.asistentes].sort((a, b) => {
+                const stA = monthSchedule[a.id]?.[selectedMobileDay] || 'L';
+                const stB = monthSchedule[b.id]?.[selectedMobileDay] || 'L';
+                return priorityOrder[stA] - priorityOrder[stB];
             });
 
-            let htmlListaDia = '';
-            asistentesOrdenados.forEach(a => {
-                const est = cuadranteMes[a.id]?.[diaSeleccionadoMovil] || 'L';
-                let badgeClase = 'bg-slate-200 text-slate-600';
-                let textoTurno = 'L - Liber';
+            let htmlDayList = '';
+            sortedStaff.forEach(a => {
+                let st = monthSchedule[a.id]?.[selectedMobileDay] || 'L';
+                if (st === 'D') st = 'Z';
+                let badgeClass = 'bg-slate-200 text-slate-600';
+                let shiftLabel = 'L - Liber';
 
-                if (est === 'Z') { badgeClase = 'bg-sky-600 text-white'; textoTurno = 'Z - Zi (07-19)'; }
-                else if (est === 'N') { badgeClase = 'bg-indigo-900 text-white'; textoTurno = 'N - Noapte (19-07)'; }
-                else if (est === 'CO') { badgeClase = 'bg-emerald-500 text-white'; textoTurno = 'CO - Concediu'; }
+                if (st === 'Z') { badgeClass = 'bg-sky-600 text-white'; shiftLabel = 'Z - Zi (07-19)'; }
+                else if (st === 'N') { badgeClass = 'bg-indigo-900 text-white'; shiftLabel = 'N - Noapte (19-07)'; }
+                else if (st === 'CO') { badgeClass = 'bg-emerald-500 text-white'; shiftLabel = 'CO - Concediu'; }
 
-                htmlListaDia += `
-                    <div onclick="rotarTurnoManual('${a.id}', ${diaSeleccionadoMovil})" 
+                htmlDayList += `
+                    <div onclick="rotateShiftManually('${a.id}', ${selectedMobileDay})" 
                          class="bg-white p-2.5 rounded-lg border border-slate-200 flex justify-between items-center cursor-pointer active:bg-slate-100 shadow-sm">
-                        <span class="font-semibold text-sm text-slate-800">${escaparHTML(a.nombre)}</span>
-                        <span class="${badgeClase} px-3 py-1 rounded-md text-xs font-bold min-w-[125px] text-center shadow-sm">
-                            ${textoTurno} 🔄
+                        <span class="font-semibold text-sm text-slate-800">${escapeHTML(a.nombre)}</span>
+                        <span class="${badgeClass} px-3 py-1 rounded-md text-xs font-bold min-w-[125px] text-center shadow-sm">
+                            ${shiftLabel} 🔄
                         </span>
                     </div>
                 `;
             });
-            document.getElementById('listaTurnosDiaMovil').innerHTML = htmlListaDia;
+            document.getElementById('mobileDayStaffList').innerHTML = htmlDayList;
 
-            // 5. Resumen mensual de horas y findes abajo
-            let htmlResumenMes = '';
-            s.asistentes.forEach(a => {
-                let tTurnos = 0, tFindes = 0;
-                for (let d = 1; d <= diasEnMes; d++) {
-                    const f = new Date(anio, mes, d);
-                    const esF = (f.getDay() === 0 || f.getDay() === 6);
-                    const e = cuadranteMes[a.id]?.[d] || 'L';
-                    if (e === 'Z' || e === 'N') {
-                        tTurnos++;
-                        if (esF) tFindes++;
+            let htmlStats = '';
+            dept.asistentes.forEach(a => {
+                let totalShifts = 0, totalWeekends = 0;
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const f = new Date(year, month, d);
+                    const isW = (f.getDay() === 0 || f.getDay() === 6);
+                    const e = monthSchedule[a.id]?.[d] || 'L';
+                    if (e === 'Z' || e === 'D' || e === 'N') {
+                        totalShifts++;
+                        if (isW) totalWeekends++;
                     }
                 }
-                htmlResumenMes += `
+                htmlStats += `
                     <div class="py-2 flex justify-between items-center">
-                        <span class="font-medium text-slate-700">${escaparHTML(a.nombre)}</span>
+                        <span class="font-medium text-slate-700">${escapeHTML(a.nombre)}</span>
                         <div class="flex gap-2">
-                            <span class="bg-slate-100 px-2 py-0.5 rounded font-semibold text-slate-700">${tTurnos} ture (${tTurnos * 12}h)</span>
-                            <span class="bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold">${tFindes} wknd</span>
+                            <span class="bg-slate-100 px-2 py-0.5 rounded font-semibold text-slate-700">${totalShifts} ture (${totalShifts * 12}h)</span>
+                            <span class="bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold">${totalWeekends} wknd</span>
                         </div>
                     </div>
                 `;
             });
-            document.getElementById('resumenMensualMovil').innerHTML = htmlResumenMes;
+            document.getElementById('mobileMonthlyStatsSummary').innerHTML = htmlStats;
         }
 
-        function renderizarVistaTablaCompleta(s, cuadranteMes, anio, mes, diasEnMes, minPorTurno) {
-            const thead = document.getElementById('cabeceraCuadrante');
-            const tbody = document.getElementById('cuerpoCuadrante');
-            const tfoot = document.getElementById('pieCuadrante');
+        function renderFullScheduleTable(dept, monthSchedule, year, month, daysInMonth, minPerShift) {
+            const thead = document.getElementById('scheduleTableHead');
+            const tbody = document.getElementById('scheduleTableBody');
+            const tfoot = document.getElementById('scheduleTableFoot');
 
             let htmlHead = `<tr class="bg-slate-800 text-white">
-                <th class="py-2 px-2.5 text-left sticky left-0 bg-slate-800 z-10 border-r border-slate-600 min-w-[135px] sm:min-w-[165px] sticky-col-shadow">
-                    ${escaparHTML(s.nombre)} (${NOMBRES_MESES[mes]})
+                <th class="py-2 px-2 text-left sticky left-0 bg-slate-800 z-10 border-r border-slate-600 min-w-[130px] sm:min-w-[155px] sticky-col-shadow">
+                    ${escapeHTML(dept.nombre)} (${MONTHS_RO[month]})
                 </th>`;
             
-            for (let d = 1; d <= diasEnMes; d++) {
-                const fecha = new Date(anio, mes, d);
-                const diaSemana = fecha.getDay();
-                const esFinde = (diaSemana === 0 || diaSemana === 6);
-                const bgClase = esFinde ? 'bg-amber-500 text-slate-900 font-bold' : '';
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateObj = new Date(year, month, d);
+                const dayOfWeek = dateObj.getDay();
+                const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                const isHoliday = isMajorHoliday(month, d);
+                const bgClass = isHoliday
+                    ? 'bg-rose-600 text-white font-bold'
+                    : (isWeekend ? 'bg-amber-500 text-slate-900 font-bold' : '');
                 
-                htmlHead += `<th class="p-1 text-center border-r border-slate-600 min-w-[32px] ${bgClase}">
-                    <div class="text-[9px] uppercase opacity-80">${DIAS_SEMANA[diaSemana]}</div>
+                htmlHead += `<th class="p-1 text-center border-r border-slate-600 min-w-[28px] ${bgClass}" title="${isHoliday ? 'Sărbătoare (Crăciun / Revelion)' : ''}">
+                    <div class="text-[9px] uppercase opacity-80">${WEEKDAYS_RO[dayOfWeek]}</div>
                     <div class="text-xs">${d}</div>
                 </th>`;
             }
             htmlHead += `
-                <th class="py-1 px-2 text-center bg-slate-900 border-l border-slate-600">Ture</th>
-                <th class="py-1 px-2 text-center bg-slate-900 border-l border-slate-700">Ore</th>
-                <th class="py-1 px-2 text-center bg-amber-700 border-l border-slate-700">Wknd</th>
+                <th class="py-1 px-1.5 text-center bg-slate-900 border-l border-slate-600">Ture</th>
+                <th class="py-1 px-1.5 text-center bg-slate-900 border-l border-slate-700">Ore</th>
+                <th class="py-1 px-1.5 text-center bg-amber-700 border-l border-slate-700">Wknd</th>
             </tr>`;
             thead.innerHTML = htmlHead;
 
             let htmlBody = '';
-            s.asistentes.forEach(asistente => {
-                const turnosAsistente = cuadranteMes[asistente.id] || {};
-                let totalTurnos = 0;
-                let totalFindes = 0;
+            dept.asistentes.forEach(member => {
+                const memberShifts = monthSchedule[member.id] || {};
+                let totalShifts = 0;
+                let totalWeekends = 0;
 
                 htmlBody += `<tr class="hover:bg-slate-50">
-                    <td class="py-2 px-2.5 font-semibold text-slate-800 sticky left-0 bg-white z-10 border-r border-slate-300 whitespace-nowrap truncate max-w-[140px] sm:max-w-none sticky-col-shadow">
-                        ${escaparHTML(asistente.nombre)}
+                    <td class="py-1.5 px-2 font-semibold text-slate-800 sticky left-0 bg-white z-10 border-r border-slate-300 whitespace-nowrap truncate max-w-[135px] sm:max-w-none sticky-col-shadow">
+                        ${escapeHTML(member.nombre)}
                     </td>`;
 
-                for (let d = 1; d <= diasEnMes; d++) {
-                    const fecha = new Date(anio, mes, d);
-                    const esFinde = (fecha.getDay() === 0 || fecha.getDay() === 6);
-                    let estado = turnosAsistente[d] || 'L';
-                    if (estado === 'D') estado = 'Z'; // Compatibilidad
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateObj = new Date(year, month, d);
+                    const isWeekend = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
+                    const isHoliday = isMajorHoliday(month, d);
+                    let state = memberShifts[d] || 'L';
+                    if (state === 'D') state = 'Z';
 
-                    if (estado === 'Z' || estado === 'N') {
-                        totalTurnos++;
-                        if (esFinde) totalFindes++;
+                    if (state === 'Z' || state === 'N') {
+                        totalShifts++;
+                        if (isWeekend) totalWeekends++;
                     }
 
-                    let estiloCelda = '';
-                    if (estado === 'Z') {
-                        estiloCelda = 'bg-sky-600 hover:bg-sky-700 text-white font-bold';
-                    } else if (estado === 'N') {
-                        estiloCelda = 'bg-indigo-900 hover:bg-indigo-950 text-white font-bold';
-                    } else if (estado === 'CO') {
-                        estiloCelda = 'bg-emerald-500 hover:bg-emerald-600 text-white font-bold';
+                    let cellStyle = '';
+                    if (state === 'Z') {
+                        cellStyle = 'bg-sky-600 hover:bg-sky-700 text-white font-bold';
+                    } else if (state === 'N') {
+                        cellStyle = 'bg-indigo-900 hover:bg-indigo-950 text-white font-bold';
+                    } else if (state === 'CO') {
+                        cellStyle = 'bg-emerald-500 hover:bg-emerald-600 text-white font-bold';
                     } else {
-                        estiloCelda = esFinde ? 'bg-amber-50 hover:bg-amber-100 text-slate-400' : 'bg-white hover:bg-slate-100 text-slate-300';
+                        cellStyle = isHoliday
+                            ? 'bg-rose-50 hover:bg-rose-100 text-rose-400'
+                            : (isWeekend ? 'bg-amber-50 hover:bg-amber-100 text-slate-400' : 'bg-white hover:bg-slate-100 text-slate-300');
                     }
 
-                    htmlBody += `<td onclick="rotarTurnoManual('${asistente.id}', ${d})" 
-                                     class="p-1.5 text-center border-r border-slate-200 cursor-pointer transition ${estiloCelda}">
-                                     ${estado}
+                    htmlBody += `<td onclick="rotateShiftManually('${member.id}', ${d})" 
+                                     class="p-1 text-center border-r border-slate-200 cursor-pointer transition ${cellStyle}">
+                                     ${state}
                                  </td>`;
                 }
 
                 htmlBody += `
-                    <td class="py-1 px-2 text-center font-bold text-slate-700 bg-slate-100 border-l border-slate-300">${totalTurnos}</td>
-                    <td class="py-1 px-2 text-center font-mono text-slate-600 bg-slate-50 border-l border-slate-200">${totalTurnos * 12}h</td>
-                    <td class="py-1 px-2 text-center font-bold text-amber-900 bg-amber-50 border-l border-slate-200">${totalFindes}</td>
+                    <td class="py-1 px-1.5 text-center font-bold text-slate-700 bg-slate-100 border-l border-slate-300">${totalShifts}</td>
+                    <td class="py-1 px-1.5 text-center font-mono text-slate-600 bg-slate-50 border-l border-slate-200">${totalShifts * 12}h</td>
+                    <td class="py-1 px-1.5 text-center font-bold text-amber-900 bg-amber-50 border-l border-slate-200">${totalWeekends}</td>
                 </tr>`;
             });
             tbody.innerHTML = htmlBody;
 
-            let filaDia = `<tr class="bg-sky-50 border-b border-slate-300">
-                <td class="py-1.5 px-2.5 sticky left-0 bg-sky-100 text-sky-900 z-10 border-r border-slate-300 sticky-col-shadow">☀️ Total ZI (Z)</td>`;
-            let filaNoche = `<tr class="bg-indigo-50">
-                <td class="py-1.5 px-2.5 sticky left-0 bg-indigo-100 text-indigo-950 z-10 border-r border-slate-300 sticky-col-shadow">🌙 Total NOAPTE (N)</td>`;
+            let rowDay = `<tr class="bg-sky-50 border-b border-slate-300">
+                <td class="py-1.5 px-2 sticky left-0 bg-sky-100 text-sky-900 z-10 border-r border-slate-300 sticky-col-shadow">☀️ Total ZI (Z)</td>`;
+            let rowNight = `<tr class="bg-indigo-50">
+                <td class="py-1.5 px-2 sticky left-0 bg-indigo-100 text-indigo-950 z-10 border-r border-slate-300 sticky-col-shadow">🌙 Total NOAPTE (N)</td>`;
 
-            for (let d = 1; d <= diasEnMes; d++) {
-                let contZ = 0, contN = 0;
-                s.asistentes.forEach(a => {
-                    const est = cuadranteMes[a.id]?.[d];
-                    if (est === 'Z' || est === 'D') contZ++;
-                    if (est === 'N') contN++;
+            for (let d = 1; d <= daysInMonth; d++) {
+                let countZ = 0, countN = 0;
+                dept.asistentes.forEach(a => {
+                    const st = monthSchedule[a.id]?.[d];
+                    if (st === 'Z' || st === 'D') countZ++;
+                    if (st === 'N') countN++;
                 });
 
-                const alertaZ = contZ < minPorTurno ? 'bg-red-600 text-white animate-pulse' : 'text-sky-900';
-                const alertaN = contN < minPorTurno ? 'bg-red-600 text-white animate-pulse' : 'text-indigo-950';
+                const alertZ = countZ < minPerShift ? 'bg-red-600 text-white animate-pulse' : 'text-sky-900';
+                const alertN = countN < minPerShift ? 'bg-red-600 text-white animate-pulse' : 'text-indigo-950';
 
-                filaDia += `<td class="p-1 text-center border-r border-slate-200 ${alertaZ}">${contZ}</td>`;
-                filaNoche += `<td class="p-1 text-center border-r border-slate-200 ${alertaN}">${contN}</td>`;
+                rowDay += `<td class="p-1 text-center border-r border-slate-200 ${alertZ}">${countZ}</td>`;
+                rowNight += `<td class="p-1 text-center border-r border-slate-200 ${alertN}">${countN}</td>`;
             }
 
-            filaDia += `<td colspan="3" class="bg-slate-100 border-l border-slate-300"></td></tr>`;
-            filaNoche += `<td colspan="3" class="bg-slate-100 border-l border-slate-300"></td></tr>`;
-            tfoot.innerHTML = filaDia + filaNoche;
+            rowDay += `<td colspan="3" class="bg-slate-100 border-l border-slate-300"></td></tr>`;
+            rowNight += `<td colspan="3" class="bg-slate-100 border-l border-slate-300"></td></tr>`;
+            tfoot.innerHTML = rowDay + rowNight;
         }
 
-        // 9. EXPORTAR EXCEL (CSV) EN RUMANO
-        function exportarCSV() {
-            const s = secActual();
-            const anio = parseInt(document.getElementById('selectAnioCuadrante').value);
-            const mes = parseInt(document.getElementById('selectMesCuadrante').value);
-            const claveMes = `${anio}-${mes}`;
-            const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+        // 9. EXPORT TO EXCEL (CSV)
+        function exportScheduleToCSV() {
+            const dept = getActiveDepartment();
+            const year = parseInt(document.getElementById('scheduleYearSelect').value);
+            const month = parseInt(document.getElementById('scheduleMonthSelect').value);
+            const monthKey = `${year}-${month}`;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-            if (!s.cuadrantes[claveMes]) {
+            if (!dept.cuadrantes[monthKey]) {
                 return alert("Generează mai întâi graficul pentru această lună.");
             }
 
-            const cuadranteMes = s.cuadrantes[claveMes];
-            let csv = [];
+            const monthSchedule = dept.cuadrantes[monthKey];
+            let csvRows = [];
 
-            let cabecera = [`${s.nombre} - ${NOMBRES_MESES[mes]} ${anio}`];
-            for (let d = 1; d <= diasEnMes; d++) {
-                const fecha = new Date(anio, mes, d);
-                cabecera.push(`${d} ${DIAS_SEMANA[fecha.getDay()]}`);
+            let header = [`${dept.nombre} - ${MONTHS_RO[month]} ${year}`];
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateObj = new Date(year, month, d);
+                header.push(`${d} ${WEEKDAYS_RO[dateObj.getDay()]}`);
             }
-            cabecera.push("Total Ture", "Total Ore", "Ture Weekend");
-            csv.push(cabecera.join(";"));
+            header.push("Total Ture", "Total Ore", "Ture Weekend");
+            csvRows.push(header.join(";"));
 
-            s.asistentes.forEach(a => {
-                let fila = [`"${a.nombre}"`];
-                let tTurnos = 0, tFindes = 0;
+            dept.asistentes.forEach(a => {
+                let row = [`"${a.nombre}"`];
+                let totalShifts = 0, totalWeekends = 0;
 
-                for (let d = 1; d <= diasEnMes; d++) {
-                    const fecha = new Date(anio, mes, d);
-                    const esFinde = (fecha.getDay() === 0 || fecha.getDay() === 6);
-                    let est = cuadranteMes[a.id]?.[d] || 'L';
-                    if (est === 'D') est = 'Z';
-                    fila.push(est);
-                    if (est === 'Z' || est === 'N') {
-                        tTurnos++;
-                        if (esFinde) tFindes++;
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateObj = new Date(year, month, d);
+                    const isWeekend = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
+                    let st = monthSchedule[a.id]?.[d] || 'L';
+                    if (st === 'D') st = 'Z';
+                    row.push(st);
+                    if (st === 'Z' || st === 'N') {
+                        totalShifts++;
+                        if (isWeekend) totalWeekends++;
                     }
                 }
-                fila.push(tTurnos, tTurnos * 12, tFindes);
-                csv.push(fila.join(";"));
+                row.push(totalShifts, totalShifts * 12, totalWeekends);
+                csvRows.push(row.join(";"));
             });
 
-            const csvString = "\uFEFF" + csv.join("\n");
+            const csvString = "\uFEFF" + csvRows.join("\n");
             const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Grafic_${s.nombre.replace(/\s+/g, '_')}_${NOMBRES_MESES[mes]}_${anio}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Grafic_${dept.nombre.replace(/\s+/g, '_')}_${MONTHS_RO[month]}_${year}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
             URL.revokeObjectURL(url);
         }
 
-        // 10. BACKUP JSON
-        function exportarDatos() {
+        // 10. JSON BACKUP & RESTORE
+        function exportBackupFile() {
             const dataStr = JSON.stringify(appData, null, 2);
             const blob = new Blob([dataStr], { type: "application/json" });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            const fecha = new Date().toISOString().slice(0, 10);
-            a.href = url;
-            a.download = `salvare_ture_spital_${fecha}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            const link = document.createElement('a');
+            const dateStr = new Date().toISOString().slice(0, 10);
+            link.href = url;
+            link.download = `salvare_ture_spital_${dateStr}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
             URL.revokeObjectURL(url);
         }
 
-        function abrirModalBackupTexto() {
-            document.getElementById('textareaBackup').value = JSON.stringify(appData, null, 2);
-            document.getElementById('modalBackupTexto').classList.remove('hidden');
+        function openTextBackupModal() {
+            document.getElementById('backupTextarea').value = JSON.stringify(appData, null, 2);
+            document.getElementById('textBackupModal').classList.remove('hidden');
         }
 
-        function cargarDesdeTextarea() {
+        function loadFromTextBackup() {
             try {
-                const texto = document.getElementById('textareaBackup').value;
-                const contenido = JSON.parse(texto);
-                if (contenido && Array.isArray(contenido.secciones)) {
-                    appData = contenido;
-                    guardarEnLocalStorage();
-                    document.getElementById('modalBackupTexto').classList.add('hidden');
+                const rawText = document.getElementById('backupTextarea').value;
+                const parsed = JSON.parse(rawText);
+                if (parsed && Array.isArray(parsed.secciones)) {
+                    appData = parsed;
+                    saveToLocalStorage();
+                    document.getElementById('textBackupModal').classList.add('hidden');
                     alert("✅ Datele au fost încărcate cu succes!");
-                    cambiarPestana(1);
+                    switchTab(1);
                 } else {
                     alert("❌ Formatul codului nu este valid.");
                 }
@@ -1597,18 +1684,18 @@
             }
         }
 
-        function importarDatos(event) {
+        function importBackupFile(event) {
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const contenido = JSON.parse(e.target.result);
-                    if (contenido && Array.isArray(contenido.secciones)) {
-                        appData = contenido;
-                        guardarEnLocalStorage();
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && Array.isArray(parsed.secciones)) {
+                        appData = parsed;
+                        saveToLocalStorage();
                         alert("✅ Fișierul de backup a fost încărcat cu succes!");
-                        cambiarPestana(1);
+                        switchTab(1);
                     } else {
                         alert("❌ Fișierul nu are formatul corect.");
                     }
@@ -1620,24 +1707,24 @@
             event.target.value = '';
         }
 
-        function borrarTodo() {
+        function resetAllData() {
             if (confirm("⚠️ Sigur dorești să ȘTERGI TOATE DATELE (toate secțiile) din acest browser?")) {
                 localStorage.removeItem(STORAGE_KEY_V2);
-                localStorage.removeItem(STORAGE_KEY_OLD);
-                appData.secciones = crearSeccionesPorDefecto();
+                localStorage.removeItem(STORAGE_KEY_V1);
+                appData.secciones = createDefaultDepartments();
                 appData.seccionActivaId = appData.secciones[0].id;
-                guardarEnLocalStorage();
-                cambiarPestana(1);
+                saveToLocalStorage();
+                switchTab(1);
             }
         }
 
-        function generarId() {
+        function generateId() {
             return 'id_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
         }
 
-        function escaparHTML(texto) {
+        function escapeHTML(str) {
             const div = document.createElement('div');
-            div.textContent = texto;
+            div.textContent = str;
             return div.innerHTML;
         }
     </script>
