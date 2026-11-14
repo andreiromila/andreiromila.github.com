@@ -252,7 +252,7 @@
                         <span class="flex items-center gap-1"><span class="px-1.5 py-0.5 bg-indigo-900 text-white font-bold rounded">N</span> Noapte (19-07)</span>
                         <span class="flex items-center gap-1"><span class="px-1.5 py-0.5 bg-slate-100 text-slate-500 border rounded">L</span> Liber</span>
                         <span class="flex items-center gap-1"><span class="px-1.5 py-0.5 bg-emerald-500 text-white font-bold rounded">CO</span> Concediu</span>
-                        <span class="flex items-center gap-1"><span class="px-1.5 py-0.5 bg-rose-600 text-white font-bold rounded">🎄</span> Sărbătoare (Crăciun/Revelion)</span>
+                        <span class="flex items-center gap-1"><span class="px-1.5 py-0.5 bg-rose-600 text-white font-bold rounded">🎄</span> Sărbătoare</span>
                     </div>
                 </div>
 
@@ -287,7 +287,7 @@
                     </div>
 
                     <div class="bg-white border border-slate-200 rounded-xl p-3">
-                        <h4 class="font-bold text-xs uppercase text-slate-500 mb-2">📊 Total Ore și Weekend-uri în această lună</h4>
+                        <h4 class="font-bold text-xs uppercase text-slate-500 mb-2">📊 Total Ore și Weekend-uri (Lună + Cumulat Istoric)</h4>
                         <div id="mobileMonthlyStatsSummary" class="divide-y divide-slate-100 text-xs"></div>
                     </div>
                 </div>
@@ -364,7 +364,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Ture Weekend Anterioare (Bază istorică)</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Ajustare Manuală Weekend-uri Bază (înainte de utilizarea aplicației)</label>
                     <input type="number" id="editStaffWeekends" min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
                 </div>
             </div>
@@ -399,7 +399,6 @@
         let scheduleViewMode = window.innerWidth < 768 ? 'day' : 'table';
         let selectedMobileDay = 1;
 
-        // Global Application State (compatible with existing localStorage structure)
         let appData = {
             seccionActivaId: 'sec_recuperare',
             secciones: []
@@ -414,11 +413,54 @@
             return dept;
         }
 
-        // Check if a given date is a Major Holiday (Christmas Dec 24-25 or New Year Dec 31 - Jan 2)
         function isMajorHoliday(monthIndex, day) {
             if (monthIndex === 11 && (day === 24 || day === 25 || day === 31)) return true;
             if (monthIndex === 0 && (day === 1 || day === 2)) return true;
             return false;
+        }
+
+        // Calculate cumulative historical weekends and shifts from ALL generated months prior to targetYear/targetMonth
+        // If targetYear is null, it sums across ALL generated months in the department.
+        function getHistoricalStatsBeforeMonth(dept, targetYear = null, targetMonth = null) {
+            const history = {};
+            dept.asistentes.forEach(member => {
+                history[member.id] = {
+                    weekends: member.findesAcumulados || 0,
+                    shifts: 0
+                };
+            });
+
+            if (!dept.cuadrantes) return history;
+
+            Object.keys(dept.cuadrantes).forEach(monthKey => {
+                const [yStr, mStr] = monthKey.split('-');
+                const y = parseInt(yStr);
+                const m = parseInt(mStr);
+
+                // Only include months strictly before targetYear-targetMonth (or all months if targetYear is null)
+                const isBefore = (targetYear === null) || (y < targetYear) || (y === targetYear && m < targetMonth);
+                if (!isBefore) return;
+
+                const schedule = dept.cuadrantes[monthKey];
+                const daysInMonth = new Date(y, m + 1, 0).getDate();
+
+                dept.asistentes.forEach(member => {
+                    const memberShifts = schedule[member.id];
+                    if (!memberShifts) return;
+                    for (let d = 1; d <= daysInMonth; d++) {
+                        const st = memberShifts[d];
+                        if (st === 'Z' || st === 'D' || st === 'N') {
+                            history[member.id].shifts++;
+                            const dow = new Date(y, m, d).getDay();
+                            if (dow === 0 || dow === 6) {
+                                history[member.id].weekends++;
+                            }
+                        }
+                    }
+                });
+            });
+
+            return history;
         }
 
         // 1. INITIALIZATION
@@ -497,7 +539,6 @@
                 const [mihai] = department.asistentes.splice(existingIndex, 1);
                 department.asistentes.unshift(mihai);
             } else if (existingIndex === -1 && department.id === 'sec_recuperare' && department.asistentes.length === 10) {
-                // Automatically prepend Mihai Dezos if the user had the old 10-person demo list
                 department.asistentes.unshift({
                     id: generateId(),
                     nombre: "Mihai Dezos",
@@ -789,9 +830,13 @@
             const maleCount = dept.asistentes.filter(a => a.genero === 'M').length;
             summary.innerText = `${total} total (${femaleCount} F / ${maleCount} M)`;
 
+            // Calculate total cumulative weekends across all generated months
+            const allTimeHistory = getHistoricalStatsBeforeMonth(dept, null, null);
+
             listContainer.innerHTML = '';
             dept.asistentes.forEach((member, index) => {
                 const genderIcon = member.genero === 'F' ? '👩‍⚕️' : '👨‍⚕️';
+                const totalHistWeekends = allTimeHistory[member.id]?.weekends || 0;
                 const item = document.createElement('div');
                 item.className = "py-2.5 px-2 flex items-center justify-between gap-2 hover:bg-slate-50 transition";
                 item.innerHTML = `
@@ -800,7 +845,10 @@
                         <span class="text-base">${genderIcon}</span>
                         <div class="truncate">
                             <div class="font-semibold text-sm text-slate-800 truncate">${escapeHTML(member.nombre)}</div>
-                            <div class="text-[11px] text-slate-500">Weekend-uri bază: <strong>${member.findesAcumulados || 0}</strong></div>
+                            <div class="text-[11px] text-slate-500">
+                                Total Weekend-uri (Toate lunile): <strong class="text-amber-800">${totalHistWeekends}</strong>
+                                <span class="text-slate-400">(Bază: ${member.findesAcumulados || 0})</span>
+                            </div>
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
@@ -988,9 +1036,9 @@
             tfoot.innerHTML = htmlFoot;
         }
 
-        // ===================================================================================
-        // 7. SCHEDULE GENERATOR ALGORITHM (WITH CHRISTMAS / NEW YEAR ANTI-OVERLAP LOGIC)
-        // ===================================================================================
+        // =========================================================================================
+        // 7. SCHEDULE GENERATOR ALGORITHM (MULTI-MONTH WEEKEND MEMORY + ACTIVE WEEKEND BALANCING)
+        // =========================================================================================
         function generateMonthlySchedule() {
             const dept = getActiveDepartment();
             const year = parseInt(document.getElementById('scheduleYearSelect').value);
@@ -1000,7 +1048,10 @@
             const minPerShift = parseInt(document.getElementById('minPerShiftInput').value) || 2;
             dept.minPorTurno = minPerShift;
 
-            // Check previous month for seamless cycle continuity across months
+            // 1. Read cumulative historical weekends from ALL months before (year, month)
+            const historicalStats = getHistoricalStatsBeforeMonth(dept, year, month);
+
+            // 2. Check previous month for seamless cycle continuity across month boundaries
             const prevMonthDate = new Date(year, month - 1, 1);
             const prevMonthKey = `${prevMonthDate.getFullYear()}-${prevMonthDate.getMonth()}`;
             const daysInPrevMonth = new Date(year, month, 0).getDate();
@@ -1010,7 +1061,6 @@
             let stats = {};
 
             dept.asistentes.forEach((member, idx) => {
-                // Check if this staff member worked Christmas (Dec 24 or Dec 25) in the previous month (useful when generating January)
                 let workedPrevChristmas = false;
                 if (month === 0 && prevSchedule && prevSchedule[member.id]) {
                     const dec24 = prevSchedule[member.id][24];
@@ -1020,10 +1070,16 @@
                     }
                 }
 
+                // Count how many vacation days this member has in the current month
+                const memberVacationsThisMonth = dept.vacaciones[monthKey]?.[member.id]?.length || 0;
+                const availableDaysRatio = Math.max(0.25, (daysInMonth - memberVacationsThisMonth) / daysInMonth);
+
                 newSchedule[member.id] = {};
                 stats[member.id] = {
                     monthlyShifts: 0,
-                    totalWeekends: member.findesAcumulados || 0,
+                    monthlyWeekends: 0,
+                    totalWeekends: historicalStats[member.id]?.weekends || 0, // Includes all previous months!
+                    availableRatio: availableDaysRatio,
                     workedChristmas: workedPrevChristmas,
                     initialGroup: idx % 4
                 };
@@ -1054,7 +1110,6 @@
                 return 'L';
             }
 
-            // Count consecutive non-working days (L or CO) immediately before 'dayNumber'
             function countConsecutiveDaysOff(staffId, dayNumber) {
                 let count = 0;
                 for (let k = 1; k <= 15; k++) {
@@ -1068,7 +1123,12 @@
             // MAIN DAY-BY-DAY LOOP
             for (let d = 1; d <= daysInMonth; d++) {
                 const dateObj = new Date(year, month, d);
-                const isWeekend = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
+                const dayOfWeek = dateObj.getDay(); // 0 = Sun, 5 = Fri, 6 = Sat
+                const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                const isTomorrowWeekend = ((dayOfWeek + 1) % 7 === 0 || (dayOfWeek + 1) % 7 === 6);
+                // Working Z on Friday means working N on Saturday (1 weekend shift).
+                // Working Z on Saturday means working Z on Sat + N on Sun (2 weekend shifts!).
+                const impactsWeekend = isWeekend || isTomorrowWeekend;
 
                 let availableToday = 0;
                 dept.asistentes.forEach(member => {
@@ -1079,8 +1139,14 @@
                     }
                 });
 
+                // Calculate the current minimum and average cumulative weekends among available staff
+                const activeWeekendCounts = dept.asistentes
+                    .filter(m => newSchedule[m.id][d] !== 'CO')
+                    .map(m => stats[m.id].totalWeekends);
+                const minTeamWeekends = activeWeekendCounts.length > 0 ? Math.min(...activeWeekendCounts) : 0;
+                const maxTeamWeekends = activeWeekendCounts.length > 0 ? Math.max(...activeWeekendCounts) : 0;
+
                 const maxIdealDayShift = Math.max(minPerShift + 1, Math.ceil(dept.asistentes.length / 4));
-                // During Dec 28-31 or Jan 1, we prefer tighter shift sizes (minPerShift) so we don't force Christmas workers into New Year shifts
                 const isHolidayTransition = (month === 11 && d >= 28) || (month === 0 && d <= 2);
 
                 let assignedDay = [];
@@ -1095,22 +1161,24 @@
                     newSchedule[member.id][d] = 'N';
                     assignedNight.push(member.id);
                     stats[member.id].monthlyShifts++;
-                    if (isWeekend) stats[member.id].totalWeekends++;
+                    if (isWeekend) {
+                        stats[member.id].monthlyWeekends++;
+                        stats[member.id].totalWeekends++;
+                    }
                     if (month === 11 && (d === 24 || d === 25)) stats[member.id].workedChristmas = true;
                 });
 
                 // 2. Candidates for DAY (Z) shift
                 let dayCandidates = dept.asistentes.filter(member => {
-                    if (newSchedule[member.id][d]) return false; // Already has CO or N today
+                    if (newSchedule[member.id][d]) return false;
                     const yesterday = getPreviousState(member.id, d - 1);
-                    if (yesterday === 'N' || yesterday === 'Z') return false; // Cannot work back-to-back after N or Z
+                    if (yesterday === 'N' || yesterday === 'Z') return false;
                     return true;
                 });
 
-                // Sort candidates by score (includes Vacation Return + Christmas/New Year Swap Logic)
                 dayCandidates.sort((a, b) => {
-                    let scoreA = calculateDayShiftScore(dept, a.id, month, d, isWeekend, getPreviousState, countConsecutiveDaysOff, stats, monthKey);
-                    let scoreB = calculateDayShiftScore(dept, b.id, month, d, isWeekend, getPreviousState, countConsecutiveDaysOff, stats, monthKey);
+                    let scoreA = calculateDayShiftScore(dept, a.id, month, d, isWeekend, isTomorrowWeekend, minTeamWeekends, getPreviousState, countConsecutiveDaysOff, stats, monthKey);
+                    let scoreB = calculateDayShiftScore(dept, b.id, month, d, isWeekend, isTomorrowWeekend, minTeamWeekends, getPreviousState, countConsecutiveDaysOff, stats, monthKey);
                     return scoreB - scoreA;
                 });
 
@@ -1122,15 +1190,22 @@
 
                     const returningFromVacation = (yesterday === 'CO' && !tomorrowCO);
                     
-                    // Special Holiday Bridge: On Dec 28-31, someone who did NOT work Christmas is ready after just 1 day off (Z -> N -> L -> Z -> N)
+                    // Holiday Bridge (Dec 28-31)
                     const readyForHolidayBridge = (month === 11 && d >= 28 && !stats[cand.id].workedChristmas && daysOff >= 1 && !tomorrowCO);
                     
-                    // Conversely, someone who DID work Christmas gets 3 days off (Z -> N -> L -> L -> L) before re-entering as optional
-                    const readyStandard = stats[cand.id].workedChristmas && (month === 11 && d >= 27)
+                    // Weekend Catch-Up Bridge: If today impacts a weekend (Fri, Sat, Sun) and this person is behind on cumulative weekends,
+                    // allow them to step in after just 1 day off (Z -> N -> L -> Z -> N) to catch up on weekend shifts!
+                    const isBehindOnWeekends = (stats[cand.id].totalWeekends <= minTeamWeekends + 1) && (maxTeamWeekends - stats[cand.id].totalWeekends >= 2);
+                    const readyForWeekendCatchUp = (impactsWeekend && isBehindOnWeekends && daysOff >= 1 && !tomorrowCO);
+
+                    // Conversely, if today impacts a weekend and this person already has way more weekends than the minimum,
+                    // hold them back for an extra day off (3 days off) if other staff can cover!
+                    const isAheadOnWeekends = impactsWeekend && (stats[cand.id].totalWeekends >= minTeamWeekends + 2);
+
+                    const readyStandard = (stats[cand.id].workedChristmas && (month === 11 && d >= 27)) || isAheadOnWeekends
                         ? (daysOff >= 3 && !tomorrowCO)
                         : (daysOff >= 2 && !tomorrowCO);
 
-                    // Prevent assigning someone on Dec 30, Dec 31 or Jan 1 as "optional extra" if they already worked Christmas
                     const blockedFromNewYear = ((month === 11 && (d === 30 || d === 31)) || (month === 0 && d === 1)) && stats[cand.id].workedChristmas;
 
                     if (assignedDay.length < minPerShift) {
@@ -1138,22 +1213,30 @@
                         newSchedule[cand.id][d] = 'Z';
                         assignedDay.push(cand.id);
                         stats[cand.id].monthlyShifts++;
-                        if (isWeekend) stats[cand.id].totalWeekends++;
+                        if (isWeekend) {
+                            stats[cand.id].monthlyWeekends++;
+                            stats[cand.id].totalWeekends++;
+                        }
                         if (month === 11 && (d === 24 || d === 25)) stats[cand.id].workedChristmas = true;
                     } else if (returningFromVacation && assignedDay.length < maxIdealDayShift + 1 && !blockedFromNewYear) {
-                        // Immediate return after CO
                         newSchedule[cand.id][d] = 'Z';
                         assignedDay.push(cand.id);
                         stats[cand.id].monthlyShifts++;
-                        if (isWeekend) stats[cand.id].totalWeekends++;
+                        if (isWeekend) {
+                            stats[cand.id].monthlyWeekends++;
+                            stats[cand.id].totalWeekends++;
+                        }
                         if (month === 11 && (d === 24 || d === 25)) stats[cand.id].workedChristmas = true;
-                    } else if ((readyStandard || readyForHolidayBridge) && !blockedFromNewYear) {
-                        const targetCap = isHolidayTransition ? minPerShift : maxIdealDayShift;
-                        if (assignedDay.length < targetCap) {
+                    } else if ((readyStandard || readyForHolidayBridge || readyForWeekendCatchUp) && !blockedFromNewYear) {
+                        const targetCap = (isHolidayTransition || impactsWeekend) ? minPerShift : maxIdealDayShift;
+                        if (assignedDay.length < targetCap || (returningFromVacation && assignedDay.length < maxIdealDayShift)) {
                             newSchedule[cand.id][d] = 'Z';
                             assignedDay.push(cand.id);
                             stats[cand.id].monthlyShifts++;
-                            if (isWeekend) stats[cand.id].totalWeekends++;
+                            if (isWeekend) {
+                                stats[cand.id].monthlyWeekends++;
+                                stats[cand.id].totalWeekends++;
+                            }
                             if (month === 11 && (d === 24 || d === 25)) stats[cand.id].workedChristmas = true;
                         }
                     }
@@ -1169,8 +1252,8 @@
                     });
 
                     nightBackupCandidates.sort((a, b) => {
-                        let scoreA = calculateNightBackupScore(a.id, month, d, isWeekend, countConsecutiveDaysOff, stats);
-                        let scoreB = calculateNightBackupScore(b.id, month, d, isWeekend, countConsecutiveDaysOff, stats);
+                        let scoreA = calculateNightBackupScore(a.id, month, d, isWeekend, minTeamWeekends, countConsecutiveDaysOff, stats);
+                        let scoreB = calculateNightBackupScore(b.id, month, d, isWeekend, minTeamWeekends, countConsecutiveDaysOff, stats);
                         return scoreB - scoreA;
                     });
 
@@ -1179,7 +1262,10 @@
                         newSchedule[chosen.id][d] = 'N';
                         assignedNight.push(chosen.id);
                         stats[chosen.id].monthlyShifts++;
-                        if (isWeekend) stats[chosen.id].totalWeekends++;
+                        if (isWeekend) {
+                            stats[chosen.id].monthlyWeekends++;
+                            stats[chosen.id].totalWeekends++;
+                        }
                         if (month === 11 && (d === 24 || d === 25)) stats[chosen.id].workedChristmas = true;
                     }
                 }
@@ -1197,15 +1283,14 @@
             renderSchedule();
         }
 
-        // Scoring function with Holiday Shift-Swap (1-day rest vs 3-day rest between Dec 26 and Jan 1)
-        function calculateDayShiftScore(dept, staffId, month, d, isWeekend, getPreviousState, countConsecutiveDaysOff, stats, monthKey) {
+        function calculateDayShiftScore(dept, staffId, month, d, isWeekend, isTomorrowWeekend, minTeamWeekends, getPreviousState, countConsecutiveDaysOff, stats, monthKey) {
             let score = 0;
             const yesterday = getPreviousState(staffId, d - 1);
             const daysOff = countConsecutiveDaysOff(staffId, d);
             const tomorrowCO = hasVacation(dept, monthKey, staffId, d + 1);
             const workedXmas = stats[staffId].workedChristmas;
 
-            // 1. Immediate return from Vacation (CO)
+            // 1. Base Rest & Vacation Return Score
             if (yesterday === 'CO') {
                 score += 800;
             } else if (daysOff >= 3) {
@@ -1213,61 +1298,66 @@
             } else if (daysOff === 2) {
                 score += 520;
             } else if (daysOff === 1) {
-                score += 150;
+                score += 240; // Enough base score to step in when boosted by weekend fairness!
             }
 
-            // 2. CHRISTMAS vs NEW YEAR CYCLE-BREAKING LOGIC (Dec 27 - Dec 31 & Jan 1)
+            // 2. ACTIVE WEEKEND EQUALIZATION (Applies on Friday, Saturday, and Sunday)
+            // Note: Working Z on Friday means working N on Saturday (1 weekend shift)
+            // Working Z on Saturday means working Z on Sat + N on Sun (2 weekend shifts!)
+            const weekendExcess = stats[staffId].totalWeekends - minTeamWeekends;
+            if (isWeekend && isTomorrowWeekend) {
+                // Saturday (Double weekend impact: Sat Z + Sun N)
+                score -= (weekendExcess * 240);
+            } else if (isWeekend || isTomorrowWeekend) {
+                // Friday (Sat N) or Sunday (Sun Z)
+                score -= (weekendExcess * 170);
+            }
+
+            // 3. CHRISTMAS vs NEW YEAR CYCLE-BREAKING LOGIC
             if (month === 11) {
                 if (d === 28 || d === 29) {
-                    // Bridge days: compress rest to 1 day (Z-N-L-Z-N) for those who were FREE on Christmas,
-                    // and expand rest to 3 days (Z-N-L-L-L) for those who WORKED Christmas!
-                    if (!workedXmas && daysOff === 1) {
-                        score += 620; // Boost 1-day rest so non-Christmas workers step in and shift the cycle
-                    }
-                    if (workedXmas && daysOff <= 2) {
-                        score -= 450; // Give Christmas workers a 3rd day off to break the 8-day harmonic
-                    }
+                    if (!workedXmas && daysOff === 1) score += 620;
+                    if (workedXmas && daysOff <= 2) score -= 450;
                 }
                 if (d === 30) {
-                    // Working Z on Dec 30 means working N on Dec 31 (New Year's Eve!)
                     if (workedXmas) score -= 2000;
                     else score += 600;
                 }
                 if (d === 31) {
-                    // Working Z on Dec 31 (New Year's Eve Day + Night into Jan 1)
                     if (workedXmas) score -= 2500;
                     else score += 750;
                 }
             }
 
             if (month === 0 && (d === 1 || d === 2)) {
-                // January 1st & 2nd: Avoid scheduling staff who worked Christmas
                 if (workedXmas) score -= 2000;
                 else score += 600;
             }
 
-            // 3. Avoid starting Z today if tomorrow is CO (would leave tomorrow's N shift short)
+            // 4. Avoid starting Z today if tomorrow is CO
             if (tomorrowCO) {
                 score -= 500;
             }
 
-            // 4. Monthly workload & Weekend fairness
-            score -= (stats[staffId].monthlyShifts * 25);
-            if (isWeekend) {
-                score -= (stats[staffId].totalWeekends * 50);
-            }
+            // 5. Proportional Monthly Workload Fairness (normalized by available non-CO days)
+            const normalizedShifts = stats[staffId].monthlyShifts / stats[staffId].availableRatio;
+            score -= (normalizedShifts * 32);
 
             return score;
         }
 
-        function calculateNightBackupScore(staffId, month, d, isWeekend, countConsecutiveDaysOff, stats) {
+        function calculateNightBackupScore(staffId, month, d, isWeekend, minTeamWeekends, countConsecutiveDaysOff, stats) {
             let score = countConsecutiveDaysOff(staffId, d) * 120;
             if ((month === 11 && d === 31) || (month === 0 && d === 1)) {
                 if (stats[staffId].workedChristmas) score -= 2000;
                 else score += 500;
             }
-            score -= (stats[staffId].monthlyShifts * 25);
-            if (isWeekend) score -= (stats[staffId].totalWeekends * 50);
+            if (isWeekend) {
+                const weekendExcess = stats[staffId].totalWeekends - minTeamWeekends;
+                score -= (weekendExcess * 180);
+            }
+            const normalizedShifts = stats[staffId].monthlyShifts / stats[staffId].availableRatio;
+            score -= (normalizedShifts * 30);
             return score;
         }
 
@@ -1358,20 +1448,21 @@
 
             emptyBanner.classList.add('hidden');
             const monthSchedule = dept.cuadrantes[monthKey];
+            const historicalStats = getHistoricalStatsBeforeMonth(dept, year, month);
 
             if (scheduleViewMode === 'day') {
                 mobileView.classList.remove('hidden');
                 tableContainer.classList.add('hidden');
-                renderMobileDaySchedule(dept, monthSchedule, year, month, daysInMonth, minPerShift);
+                renderMobileDaySchedule(dept, monthSchedule, historicalStats, year, month, daysInMonth, minPerShift);
             } else {
                 mobileView.classList.add('hidden');
                 tableContainer.classList.remove('hidden');
             }
 
-            renderFullScheduleTable(dept, monthSchedule, year, month, daysInMonth, minPerShift);
+            renderFullScheduleTable(dept, monthSchedule, historicalStats, year, month, daysInMonth, minPerShift);
         }
 
-        function renderMobileDaySchedule(dept, monthSchedule, year, month, daysInMonth, minPerShift) {
+        function renderMobileDaySchedule(dept, monthSchedule, historicalStats, year, month, daysInMonth, minPerShift) {
             const scrollBar = document.getElementById('mobileDayScrollBar');
             let htmlBar = '';
             for (let d = 1; d <= daysInMonth; d++) {
@@ -1463,22 +1554,24 @@
 
             let htmlStats = '';
             dept.asistentes.forEach(a => {
-                let totalShifts = 0, totalWeekends = 0;
+                let totalShifts = 0, monthWeekends = 0;
                 for (let d = 1; d <= daysInMonth; d++) {
                     const f = new Date(year, month, d);
                     const isW = (f.getDay() === 0 || f.getDay() === 6);
                     const e = monthSchedule[a.id]?.[d] || 'L';
                     if (e === 'Z' || e === 'D' || e === 'N') {
                         totalShifts++;
-                        if (isW) totalWeekends++;
+                        if (isW) monthWeekends++;
                     }
                 }
+                const cumulativeWeekends = (historicalStats[a.id]?.weekends || 0) + monthWeekends;
                 htmlStats += `
                     <div class="py-2 flex justify-between items-center">
                         <span class="font-medium text-slate-700">${escapeHTML(a.nombre)}</span>
-                        <div class="flex gap-2">
+                        <div class="flex gap-1.5">
                             <span class="bg-slate-100 px-2 py-0.5 rounded font-semibold text-slate-700">${totalShifts} ture (${totalShifts * 12}h)</span>
-                            <span class="bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold">${totalWeekends} wknd</span>
+                            <span class="bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold">${monthWeekends} wknd</span>
+                            <span class="bg-blue-100 text-blue-900 px-2 py-0.5 rounded font-bold" title="Total cumulat cu lunile anterioare">Tot: ${cumulativeWeekends}</span>
                         </div>
                     </div>
                 `;
@@ -1486,7 +1579,7 @@
             document.getElementById('mobileMonthlyStatsSummary').innerHTML = htmlStats;
         }
 
-        function renderFullScheduleTable(dept, monthSchedule, year, month, daysInMonth, minPerShift) {
+        function renderFullScheduleTable(dept, monthSchedule, historicalStats, year, month, daysInMonth, minPerShift) {
             const thead = document.getElementById('scheduleTableHead');
             const tbody = document.getElementById('scheduleTableBody');
             const tfoot = document.getElementById('scheduleTableFoot');
@@ -1511,9 +1604,10 @@
                 </th>`;
             }
             htmlHead += `
-                <th class="py-1 px-1.5 text-center bg-slate-900 border-l border-slate-600">Ture</th>
-                <th class="py-1 px-1.5 text-center bg-slate-900 border-l border-slate-700">Ore</th>
-                <th class="py-1 px-1.5 text-center bg-amber-700 border-l border-slate-700">Wknd</th>
+                <th class="py-1 px-1.5 text-center bg-slate-900 border-l border-slate-600" title="Ture în această lună">Ture</th>
+                <th class="py-1 px-1.5 text-center bg-slate-900 border-l border-slate-700" title="Ore lucrate în această lună">Ore</th>
+                <th class="py-1 px-1.5 text-center bg-amber-600 text-slate-950 border-l border-slate-700" title="Ture de weekend în această lună">Wknd Lună</th>
+                <th class="py-1 px-1.5 text-center bg-blue-900 text-white border-l border-slate-700" title="Total weekend-uri cumulate (Lunile anterioare + Luna curentă)">Wknd Total</th>
             </tr>`;
             thead.innerHTML = htmlHead;
 
@@ -1521,7 +1615,7 @@
             dept.asistentes.forEach(member => {
                 const memberShifts = monthSchedule[member.id] || {};
                 let totalShifts = 0;
-                let totalWeekends = 0;
+                let monthWeekends = 0;
 
                 htmlBody += `<tr class="hover:bg-slate-50">
                     <td class="py-1.5 px-2 font-semibold text-slate-800 sticky left-0 bg-white z-10 border-r border-slate-300 whitespace-nowrap truncate max-w-[135px] sm:max-w-none sticky-col-shadow">
@@ -1537,7 +1631,7 @@
 
                     if (state === 'Z' || state === 'N') {
                         totalShifts++;
-                        if (isWeekend) totalWeekends++;
+                        if (isWeekend) monthWeekends++;
                     }
 
                     let cellStyle = '';
@@ -1559,10 +1653,13 @@
                                  </td>`;
                 }
 
+                const cumulativeWeekends = (historicalStats[member.id]?.weekends || 0) + monthWeekends;
+
                 htmlBody += `
                     <td class="py-1 px-1.5 text-center font-bold text-slate-700 bg-slate-100 border-l border-slate-300">${totalShifts}</td>
                     <td class="py-1 px-1.5 text-center font-mono text-slate-600 bg-slate-50 border-l border-slate-200">${totalShifts * 12}h</td>
-                    <td class="py-1 px-1.5 text-center font-bold text-amber-900 bg-amber-50 border-l border-slate-200">${totalWeekends}</td>
+                    <td class="py-1 px-1.5 text-center font-bold text-amber-900 bg-amber-50 border-l border-slate-200">${monthWeekends}</td>
+                    <td class="py-1 px-1.5 text-center font-bold text-blue-900 bg-blue-50 border-l border-slate-200" title="Istoric anterior (${historicalStats[member.id]?.weekends || 0}) + Luna curentă (${monthWeekends})">${cumulativeWeekends}</td>
                 </tr>`;
             });
             tbody.innerHTML = htmlBody;
@@ -1587,8 +1684,8 @@
                 rowNight += `<td class="p-1 text-center border-r border-slate-200 ${alertN}">${countN}</td>`;
             }
 
-            rowDay += `<td colspan="3" class="bg-slate-100 border-l border-slate-300"></td></tr>`;
-            rowNight += `<td colspan="3" class="bg-slate-100 border-l border-slate-300"></td></tr>`;
+            rowDay += `<td colspan="4" class="bg-slate-100 border-l border-slate-300"></td></tr>`;
+            rowNight += `<td colspan="4" class="bg-slate-100 border-l border-slate-300"></td></tr>`;
             tfoot.innerHTML = rowDay + rowNight;
         }
 
@@ -1605,6 +1702,7 @@
             }
 
             const monthSchedule = dept.cuadrantes[monthKey];
+            const historicalStats = getHistoricalStatsBeforeMonth(dept, year, month);
             let csvRows = [];
 
             let header = [`${dept.nombre} - ${MONTHS_RO[month]} ${year}`];
@@ -1612,12 +1710,12 @@
                 const dateObj = new Date(year, month, d);
                 header.push(`${d} ${WEEKDAYS_RO[dateObj.getDay()]}`);
             }
-            header.push("Total Ture", "Total Ore", "Ture Weekend");
+            header.push("Total Ture", "Total Ore", "Weekend Luna", "Weekend Cumulat");
             csvRows.push(header.join(";"));
 
             dept.asistentes.forEach(a => {
                 let row = [`"${a.nombre}"`];
-                let totalShifts = 0, totalWeekends = 0;
+                let totalShifts = 0, monthWeekends = 0;
 
                 for (let d = 1; d <= daysInMonth; d++) {
                     const dateObj = new Date(year, month, d);
@@ -1627,10 +1725,11 @@
                     row.push(st);
                     if (st === 'Z' || st === 'N') {
                         totalShifts++;
-                        if (isWeekend) totalWeekends++;
+                        if (isWeekend) monthWeekends++;
                     }
                 }
-                row.push(totalShifts, totalShifts * 12, totalWeekends);
+                const cumulativeWeekends = (historicalStats[a.id]?.weekends || 0) + monthWeekends;
+                row.push(totalShifts, totalShifts * 12, monthWeekends, cumulativeWeekends);
                 csvRows.push(row.join(";"));
             });
 
